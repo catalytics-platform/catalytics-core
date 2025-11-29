@@ -28,16 +28,19 @@ impl From<BetaApplicantDb> for BetaApplicant {
 #[async_trait]
 impl BetaApplicantPersistence for PostgresPersistence {
     async fn create_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant> {
-        let beta_applicant_db = sqlx::query_as!(
+        match sqlx::query_as!(
             BetaApplicantDb,
             "INSERT INTO beta_applicants (public_key) VALUES ($1) RETURNING id, public_key, email, created_at",
             public_key,
         )
         .fetch_one(&self.pool)
-        .await
-        .map_err(AppError::from)?;
-
-        Ok(beta_applicant_db.into())
+        .await {
+            Ok(beta_applicant_db) => Ok(beta_applicant_db.into()),
+            Err(sqlx::Error::Database(db_err)) if db_err.constraint().is_some() => {
+                self.read_beta_applicant(public_key).await
+            }
+            Err(e) => Err(AppError::from(e)),
+        }
     }
 
     async fn read_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant> {
@@ -51,5 +54,23 @@ impl BetaApplicantPersistence for PostgresPersistence {
         .map_err(AppError::from)?;
 
         Ok(beta_applicant.into())
+    }
+
+    async fn update_beta_applicant(
+        &self,
+        public_key: &str,
+        email: &str,
+    ) -> AppResult<BetaApplicant> {
+        let beta_applicant_db = sqlx::query_as!(
+            BetaApplicantDb,
+            "UPDATE beta_applicants SET email = $1 WHERE public_key = $2 RETURNING id, public_key, email, created_at",
+            email,
+            public_key,
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(beta_applicant_db.into())
     }
 }

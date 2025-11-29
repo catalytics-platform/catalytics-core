@@ -7,6 +7,11 @@ use std::sync::Arc;
 pub trait BetaApplicantPersistence: Send + Sync {
     async fn create_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant>;
     async fn read_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant>;
+    async fn update_beta_applicant(
+        &self,
+        public_key: &str,
+        email: &str,
+    ) -> AppResult<BetaApplicant>;
 }
 
 #[derive(Clone)]
@@ -26,6 +31,14 @@ impl BetaApplicantUseCases {
 
     pub async fn read(&self, public_key: &str) -> AppResult<BetaApplicant> {
         let applicant = self.persistence.read_beta_applicant(public_key).await?;
+        Ok(applicant)
+    }
+
+    pub async fn update(&self, public_key: &str, email: &str) -> AppResult<BetaApplicant> {
+        let applicant = self
+            .persistence
+            .update_beta_applicant(public_key, email)
+            .await?;
         Ok(applicant)
     }
 }

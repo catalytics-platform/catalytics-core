@@ -5,7 +5,7 @@ use crate::use_cases::beta_applicant::BetaApplicantUseCases;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::{get, patch, post};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,8 @@ use tracing::instrument;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_beta_applicant))
-        .route("/{user_id}", get(read_beta_applicant))
+        .route("/{public_key}", get(read_beta_applicant))
+        .route("/{public_key}", patch(update_beta_applicant))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -24,13 +25,13 @@ struct CreateBetaApplicantRequest {
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct CreateBetaApplicantResponse {
+struct BetaApplicantResponse {
     public_key: String,
     email: Option<String>,
     created_at: DateTime<Utc>,
 }
 
-impl From<BetaApplicant> for CreateBetaApplicantResponse {
+impl From<BetaApplicant> for BetaApplicantResponse {
     fn from(applicant: BetaApplicant) -> Self {
         Self {
             public_key: applicant.public_key,
@@ -49,19 +50,40 @@ async fn create_beta_applicant(
 
     Ok((
         StatusCode::CREATED,
-        Json(CreateBetaApplicantResponse::from(applicant)),
+        Json(BetaApplicantResponse::from(applicant)),
     ))
 }
 
 #[instrument(skip(beta_applicant_use_cases))]
 async fn read_beta_applicant(
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
-    Path(user_id): Path<String>,
+    Path(public_key): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    let applicant = beta_applicant_use_cases.read(&user_id).await?;
+    let applicant = beta_applicant_use_cases.read(&public_key).await?;
 
     Ok((
         StatusCode::CREATED,
-        Json(CreateBetaApplicantResponse::from(applicant)),
+        Json(BetaApplicantResponse::from(applicant)),
+    ))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct UpdateBetaApplicantRequest {
+    email: String,
+}
+
+#[instrument(skip(beta_applicant_use_cases))]
+async fn update_beta_applicant(
+    State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    Path(public_key): Path<String>,
+    Json(payload): Json<UpdateBetaApplicantRequest>,
+) -> AppResult<impl IntoResponse> {
+    let applicant = beta_applicant_use_cases
+        .update(&public_key, &payload.email)
+        .await?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(BetaApplicantResponse::from(applicant)),
     ))
 }
