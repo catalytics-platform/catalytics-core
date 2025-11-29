@@ -5,7 +5,6 @@ use crate::use_cases::beta_applicant::BetaApplicantPersistence;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
-// User struct as stored in the db.
 #[derive(sqlx::FromRow, Debug)]
 pub struct BetaApplicantDb {
     pub id: i32,

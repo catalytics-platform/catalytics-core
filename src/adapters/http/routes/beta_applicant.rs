@@ -1,8 +1,9 @@
 use crate::adapters::http::app_state::AppState;
+use crate::adapters::http::middleware::auth::AuthenticatedUser;
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
@@ -15,14 +16,8 @@ use tracing::instrument;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_beta_applicant))
-        .route("/{public_key}", get(read_beta_applicant))
-        .route("/{public_key}", patch(update_beta_applicant))
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateBetaApplicantRequest {
-    public_key: String,
+        .route("/", get(read_beta_applicant))
+        .route("/", patch(update_beta_applicant))
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -45,10 +40,10 @@ impl From<BetaApplicant> for BetaApplicantResponse {
 
 #[instrument(skip(beta_applicant_use_cases))]
 async fn create_beta_applicant(
+    auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
-    Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
-    let applicant = beta_applicant_use_cases.create(&payload.public_key).await?;
+    let applicant = beta_applicant_use_cases.create(&auth.public_key).await?;
 
     Ok((
         StatusCode::CREATED,
@@ -58,15 +53,12 @@ async fn create_beta_applicant(
 
 #[instrument(skip(beta_applicant_use_cases))]
 async fn read_beta_applicant(
+    auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
-    Path(public_key): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    let applicant = beta_applicant_use_cases.read(&public_key).await?;
+    let applicant = beta_applicant_use_cases.read(&auth.public_key).await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(BetaApplicantResponse::from(applicant)),
-    ))
+    Ok((StatusCode::OK, Json(BetaApplicantResponse::from(applicant))))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -77,16 +69,13 @@ struct UpdateBetaApplicantRequest {
 
 #[instrument(skip(beta_applicant_use_cases))]
 async fn update_beta_applicant(
+    auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
-    Path(public_key): Path<String>,
     Json(payload): Json<UpdateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
-        .update(&public_key, &payload.email)
+        .update(&auth.public_key, &payload.email)
         .await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(BetaApplicantResponse::from(applicant)),
-    ))
+    Ok((StatusCode::OK, Json(BetaApplicantResponse::from(applicant))))
 }

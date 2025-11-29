@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use axum::{
-    extract::Request,
-    http::{HeaderMap, StatusCode},
+    extract::{FromRequestParts, Request},
+    http::{HeaderMap, StatusCode, request::Parts},
     middleware::Next,
     response::Response,
 };
@@ -22,7 +22,27 @@ struct AuthData {
     pub decoded_message: String,
 }
 
-pub async fn auth_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
+#[derive(Debug, Clone)]
+pub struct AuthenticatedUser {
+    pub public_key: String,
+}
+
+impl<S> FromRequestParts<S> for AuthenticatedUser
+where
+    S: Send + Sync,
+{
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        parts
+            .extensions
+            .get::<AuthenticatedUser>()
+            .cloned()
+            .ok_or(StatusCode::UNAUTHORIZED)
+    }
+}
+
+pub async fn auth_middleware(mut request: Request, next: Next) -> Result<Response, StatusCode> {
     let headers = request.headers();
 
     let auth_header = extract_header(headers, "Authorization")?;
@@ -32,6 +52,10 @@ pub async fn auth_middleware(request: Request, next: Next) -> Result<Response, S
         parse_auth_headers(&auth_header, &message).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     is_authorized(&auth_data).map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+    request.extensions_mut().insert(AuthenticatedUser {
+        public_key: auth_data.solana.public_key.clone(),
+    });
 
     Ok(next.run(request).await)
 }
