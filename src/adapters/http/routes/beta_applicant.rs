@@ -20,11 +20,13 @@ pub fn router() -> Router<AppState> {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CreateBetaApplicantRequest {
     public_key: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BetaApplicantResponse {
     public_key: String,
     email: Option<String>,
@@ -68,6 +70,7 @@ async fn read_beta_applicant(
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct UpdateBetaApplicantRequest {
     email: String,
 }
