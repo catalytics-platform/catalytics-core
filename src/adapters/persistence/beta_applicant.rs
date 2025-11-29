@@ -3,15 +3,15 @@ use crate::app_error::{AppError, AppResult};
 use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 // User struct as stored in the db.
 #[derive(sqlx::FromRow, Debug)]
 pub struct BetaApplicantDb {
-    pub id: u32,
+    pub id: i32,
     pub public_key: String,
-    pub email: String,
-    pub created_at: NaiveDateTime,
+    pub email: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<BetaApplicantDb> for BetaApplicant {
@@ -27,16 +27,29 @@ impl From<BetaApplicantDb> for BetaApplicant {
 
 #[async_trait]
 impl BetaApplicantPersistence for PostgresPersistence {
-    async fn create_beta_applicant(&self, public_key: &str, email: &str) -> AppResult<()> {
-        sqlx::query!(
-            "INSERT INTO beta_applicants (public_key, email) VALUES ($1, $2)",
+    async fn create_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant> {
+        let beta_applicant_db = sqlx::query_as!(
+            BetaApplicantDb,
+            "INSERT INTO beta_applicants (public_key) VALUES ($1) RETURNING id, public_key, email, created_at",
             public_key,
-            email,
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
         .map_err(AppError::from)?;
 
-        Ok(())
+        Ok(beta_applicant_db.into())
+    }
+
+    async fn read_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant> {
+        let beta_applicant = sqlx::query_as!(
+            BetaApplicantDb,
+            "SELECT * FROM beta_applicants WHERE public_key = $1",
+            public_key
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(beta_applicant.into())
     }
 }

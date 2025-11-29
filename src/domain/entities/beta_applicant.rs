@@ -1,9 +1,9 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 #[derive(Debug)]
 pub struct BetaApplicant {
-    pub id: u32,
+    pub id: i32,
     pub public_key: String,
-    pub email: String,
-    pub created_at: NaiveDateTime,
+    pub email: Option<String>,
+    pub created_at: DateTime<Utc>,
 }

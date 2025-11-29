@@ -15,9 +15,8 @@ pub async fn init_app_state() -> anyhow::Result<AppState> {
 }
 
 pub fn init_tracing() {
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        EnvFilter::new("catalytics_core=info,sqlx=warn")
-    });
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("catalytics_core=info,sqlx=warn"));
 
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 }

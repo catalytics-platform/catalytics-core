@@ -10,8 +10,9 @@ tower-http = { version = "0.6.7", features = ["cors"] }
 dotenvy = "0.15.7"
 tracing = "0.1.43"
 anyhow = "1.0.100"
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "tls-native-tls"] }
+sqlx = { version = "0.8.6", features = ["chrono", "macros", "postgres", "runtime-tokio", "tls-native-tls"] }
 thiserror = "2.0.17"
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
 async-trait = "0.1.89"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
+serde = { version = "1.0.228", features = ["derive"] }
