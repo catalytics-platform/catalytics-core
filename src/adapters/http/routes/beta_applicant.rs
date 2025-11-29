@@ -10,7 +10,7 @@ use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{info, instrument};
+use tracing::instrument;
 
 pub fn router() -> Router<AppState> {
     Router::new()
