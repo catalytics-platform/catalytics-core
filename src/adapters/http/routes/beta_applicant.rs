@@ -25,7 +25,7 @@ pub fn router() -> Router<AppState> {
 struct BetaApplicantResponse {
     public_key: String,
     email: Option<String>,
-    created_at: DateTime<Utc>,
+    registered_since: DateTime<Utc>,
 }
 
 impl From<BetaApplicant> for BetaApplicantResponse {
@@ -33,7 +33,7 @@ impl From<BetaApplicant> for BetaApplicantResponse {
         Self {
             public_key: applicant.public_key,
             email: applicant.email,
-            created_at: applicant.created_at,
+            registered_since: applicant.created_at,
         }
     }
 }
