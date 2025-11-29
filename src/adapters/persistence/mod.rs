@@ -1,5 +1,5 @@
-use sqlx::{Error, PgPool};
 use crate::app_error::AppError;
+use sqlx::{Error, PgPool};
 
 pub mod beta_applicant;
 

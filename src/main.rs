@@ -1,7 +1,7 @@
-use dotenvy::dotenv;
-use tracing::info;
 use catalytics_core::infrastructure::app::create_app;
 use catalytics_core::infrastructure::setup::init_app_state;
+use dotenvy::dotenv;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -12,7 +12,10 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
-    info!("Catalytics Core listening at {}", &listener.local_addr().unwrap());
+    info!(
+        "Catalytics Core listening at {}",
+        &listener.local_addr().unwrap()
+    );
 
     axum::serve(listener, app).await.unwrap();
 

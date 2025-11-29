@@ -1,6 +1,6 @@
-use std::env;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use std::env;
 use tracing::info;
 
 pub async fn init_db() -> anyhow::Result<PgPool> {

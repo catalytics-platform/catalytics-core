@@ -9,16 +9,18 @@ pub trait BetaApplicantPersistence: Send + Sync {
 
 #[derive(Clone)]
 pub struct BetaApplicantUseCases {
-    persistence: Arc<dyn BetaApplicantPersistence>
+    persistence: Arc<dyn BetaApplicantPersistence>,
 }
 
 impl BetaApplicantUseCases {
     pub fn new(persistence: Arc<dyn BetaApplicantPersistence>) -> Self {
         Self { persistence }
     }
-    
+
     pub async fn add(&self, public_key: &str, email: &str) -> AppResult<()> {
-        self.persistence.create_beta_applicant(public_key, email).await?;
+        self.persistence
+            .create_beta_applicant(public_key, email)
+            .await?;
         Ok(())
     }
 }

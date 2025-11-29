@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use chrono::NaiveDateTime;
 use crate::adapters::persistence::PostgresPersistence;
 use crate::app_error::{AppError, AppResult};
 use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
+use async_trait::async_trait;
+use chrono::NaiveDateTime;
 
 // User struct as stored in the db.
 #[derive(sqlx::FromRow, Debug)]
@@ -30,7 +30,8 @@ impl BetaApplicantPersistence for PostgresPersistence {
     async fn create_beta_applicant(&self, public_key: &str, email: &str) -> AppResult<()> {
         sqlx::query!(
             "INSERT INTO beta_applicants (public_key, email) VALUES ($1, $2)",
-            public_key, email,
+            public_key,
+            email,
         )
         .execute(&self.pool)
         .await
