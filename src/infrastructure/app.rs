@@ -1,7 +1,7 @@
 use crate::adapters;
 use crate::adapters::http::app_state::AppState;
 use crate::infrastructure::setup::init_tracing;
-use axum::{http, Router};
+use axum::{Router, http};
 use tower_http::cors::{Any, CorsLayer};
 
 pub fn create_app(app_state: AppState) -> Router {

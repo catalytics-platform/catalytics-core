@@ -6,4 +6,6 @@ pub struct BetaApplicant {
     pub public_key: String,
     pub email: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub referral_code: String,
+    pub referred_by: Option<String>,
 }

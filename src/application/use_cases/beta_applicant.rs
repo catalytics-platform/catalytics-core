@@ -5,8 +5,18 @@ use std::sync::Arc;
 
 #[async_trait]
 pub trait BetaApplicantPersistence: Send + Sync {
-    async fn create_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant>;
-    async fn read_beta_applicant(&self, public_key: &str) -> AppResult<BetaApplicant>;
+    async fn create_beta_applicant(
+        &self,
+        public_key: &str,
+        referral_code: Option<&str>,
+    ) -> AppResult<BetaApplicant>;
+    async fn read_beta_applicant_by_id(&self, id: i32) -> AppResult<BetaApplicant>;
+    async fn read_beta_applicant_by_public_key(&self, public_key: &str)
+    -> AppResult<BetaApplicant>;
+    async fn read_beta_applicant_by_referral_code(
+        &self,
+        referral_code: &str,
+    ) -> AppResult<BetaApplicant>;
     async fn update_beta_applicant(
         &self,
         public_key: &str,
@@ -24,13 +34,23 @@ impl BetaApplicantUseCases {
         Self { persistence }
     }
 
-    pub async fn create(&self, public_key: &str) -> AppResult<BetaApplicant> {
-        let applicant = self.persistence.create_beta_applicant(public_key).await?;
+    pub async fn create(
+        &self,
+        public_key: &str,
+        referral_code: Option<&str>,
+    ) -> AppResult<BetaApplicant> {
+        let applicant = self
+            .persistence
+            .create_beta_applicant(public_key, referral_code)
+            .await?;
         Ok(applicant)
     }
 
     pub async fn read(&self, public_key: &str) -> AppResult<BetaApplicant> {
-        let applicant = self.persistence.read_beta_applicant(public_key).await?;
+        let applicant = self
+            .persistence
+            .read_beta_applicant_by_public_key(public_key)
+            .await?;
         Ok(applicant)
     }
 

@@ -1,5 +1,6 @@
 use crate::adapters::http::app_state::AppState;
 use crate::adapters::http::middleware::auth::AuthenticatedUser;
+use crate::adapters::http::middleware::auth_middleware;
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
@@ -7,12 +8,11 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
-use axum::{middleware, Json, Router};
+use axum::{Json, Router, middleware};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
-use crate::adapters::http::middleware::auth_middleware;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -28,6 +28,8 @@ struct BetaApplicantResponse {
     public_key: String,
     email: Option<String>,
     registered_since: DateTime<Utc>,
+    referral_code: String,
+    referred_by: Option<String>,
 }
 
 impl From<BetaApplicant> for BetaApplicantResponse {
@@ -36,16 +38,27 @@ impl From<BetaApplicant> for BetaApplicantResponse {
             public_key: applicant.public_key,
             email: applicant.email,
             registered_since: applicant.created_at,
+            referral_code: applicant.referral_code,
+            referred_by: applicant.referred_by,
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateBetaApplicantRequest {
+    referral_code: Option<String>,
 }
 
 #[instrument(skip(beta_applicant_use_cases))]
 async fn create_beta_applicant(
     auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
-    let applicant = beta_applicant_use_cases.create(&auth.public_key).await?;
+    let applicant = beta_applicant_use_cases
+        .create(&auth.public_key, payload.referral_code.as_deref())
+        .await?;
 
     Ok((
         StatusCode::CREATED,
