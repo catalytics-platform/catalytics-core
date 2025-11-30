@@ -13,10 +13,10 @@ RUN apk add --no-cache \
 # Set target for ARM64 static linking
 ENV RUSTFLAGS="-C target-feature=+crt-static"
 
-# Install SQLx CLI with static linking for ARM64
+# Install SQLx CLI with static linking for ARM64 and TLS support
 RUN cargo install sqlx-cli \
     --no-default-features \
-    --features postgres \
+    --features postgres,rustls \
     --target aarch64-unknown-linux-musl
 
 # Runtime stage - minimal Alpine image
