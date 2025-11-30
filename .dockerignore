@@ -21,7 +21,7 @@ Thumbs.db
 # Rust
 target/
 **/*.rs.bk
-Cargo.lock
+# Note: Cargo.lock is needed for Docker builds for dependency caching
 
 # Environment
 .env
