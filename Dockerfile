@@ -14,8 +14,8 @@ WORKDIR /app
 # Copy all source
 COPY . .
 
-# Build application
-ENV DATABASE_URL="postgres://dummy:dummy@dummy:5432/dummy"
+# Build application in offline mode to avoid database connection at compile time
+ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 # Set ownership and switch to non-root user
