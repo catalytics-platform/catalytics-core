@@ -24,13 +24,13 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release && rm -rf src
 
-# Copy source code, migrations, and SQLx offline data
+# Copy source code and migrations
 COPY src/ ./src/
 COPY migrations/ ./migrations/
-COPY .sqlx/ ./.sqlx/
 
-# Build the actual application in offline mode
-ENV SQLX_OFFLINE=true
+# Build the actual application
+# Note: Docker builds will need a dummy DATABASE_URL to satisfy SQLx macros
+ENV DATABASE_URL="postgres://dummy:dummy@dummy:5432/dummy"
 RUN cargo build --release
 
 # Production stage
