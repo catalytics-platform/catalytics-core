@@ -1,0 +1,35 @@
+# Migration runner for Catalytics Core using SQLx CLI
+# Using ARM64 architecture for AWS Graviton2 compatibility
+
+FROM --platform=linux/arm64 rust:1.78-slim AS builder
+
+# Install SQLx CLI with only postgres support for smaller binary
+RUN cargo install sqlx-cli --no-default-features --features postgres
+
+# Runtime stage
+FROM --platform=linux/arm64 debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash app
+
+# Set working directory
+WORKDIR /app
+
+# Copy SQLx CLI from builder stage
+COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
+
+# Copy migrations
+COPY migrations/ ./migrations/
+
+# Set ownership
+RUN chown -R app:app /app
+
+# Switch to non-root user
+USER app
+
+# Command to run migrations
+CMD ["sqlx", "migrate", "run"]

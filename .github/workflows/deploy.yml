@@ -1,0 +1,225 @@
+name: Deploy Catalytics Core
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: fiji-cors-anywhere
+
+jobs:
+  build:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    outputs:
+      app-image-tag: ${{ steps.build-app.outputs.image-tag }}
+      app-image-uri: ${{ steps.build-app.outputs.image-uri }}
+      migration-image-uri: ${{ steps.build-migration.outputs.image-uri }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push main application ARM64 image
+      id: build-app
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: catalytics-core-${{ github.sha }}
+      run: |
+        docker buildx build \
+          --platform linux/arm64 \
+          --push \
+          -f Dockerfile \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+          .
+        
+        echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "image-uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Build and push migration image
+      id: build-migration
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        MIGRATION_TAG: catalytics-migrations-${{ github.sha }}
+      run: |
+        docker buildx build \
+          --platform linux/arm64 \
+          --push \
+          -f Dockerfile.migrations \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$MIGRATION_TAG \
+          .
+        
+        echo "image-uri=$ECR_REGISTRY/$ECR_REPOSITORY:$MIGRATION_TAG" >> $GITHUB_OUTPUT
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    env:
+      ENVIRONMENT: staging
+      NAMESPACE: catalytics-core-staging
+      CLUSTER_NAME: fiji-staging-cluster
+      DOMAIN: staging.api.app.catalytics.pro
+      REPLICAS: 1
+      MIN_REPLICAS: 1
+      MAX_REPLICAS: 3
+      ALB_GROUP_NAME: staging-shared-alb
+      RUST_LOG: "catalytics_core=info,sqlx=warn"
+      IMAGE: ${{ needs.build.outputs.app-image-uri }}
+      MIGRATION_IMAGE: ${{ needs.build.outputs.migration-image-uri }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl for EKS
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
+
+    - name: Create namespace if not exists
+      run: |
+        kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Substitute environment variables in Kubernetes manifests
+      run: |
+        # Set staging-specific secrets
+        export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
+        export CERTIFICATE_ARN="${{ secrets.STAGING_CERTIFICATE_ARN }}"
+        
+        # Substitute variables in manifest files
+        envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
+        envsubst < k8s/service.yaml > k8s/service-applied.yaml
+        envsubst < k8s/ingress.yaml > k8s/ingress-applied.yaml
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/deployment-applied.yaml
+        kubectl apply -f k8s/service-applied.yaml
+        kubectl apply -f k8s/ingress-applied.yaml
+
+    - name: Wait for rollout to complete
+      run: |
+        kubectl rollout status deployment/catalytics-core -n ${{ env.NAMESPACE }} --timeout=600s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=catalytics-core
+        kubectl wait --for=condition=available deployment/catalytics-core -n ${{ env.NAMESPACE }} --timeout=300s
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=catalytics-core --field-selector=status.phase=Running
+
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        rm -f k8s/*-applied.yaml
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+    env:
+      ENVIRONMENT: production
+      NAMESPACE: catalytics-core-production
+      CLUSTER_NAME: fiji-prod-cluster
+      DOMAIN: api.app.catalytics.pro
+      REPLICAS: 2
+      MIN_REPLICAS: 2
+      MAX_REPLICAS: 10
+      ALB_GROUP_NAME: production-shared-alb
+      RUST_LOG: "catalytics_core=info,sqlx=warn"
+      IMAGE: ${{ needs.build.outputs.app-image-uri }}
+      MIGRATION_IMAGE: ${{ needs.build.outputs.migration-image-uri }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl for EKS
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
+
+    - name: Create namespace if not exists
+      run: |
+        kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Substitute environment variables in Kubernetes manifests
+      run: |
+        # Set production-specific secrets
+        export DATABASE_URL="${{ secrets.PROD_DATABASE_URL }}"
+        export CERTIFICATE_ARN="${{ secrets.PROD_CERTIFICATE_ARN }}"
+        
+        # Substitute variables in manifest files
+        envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
+        envsubst < k8s/service.yaml > k8s/service-applied.yaml
+        envsubst < k8s/ingress.yaml > k8s/ingress-applied.yaml
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/deployment-applied.yaml
+        kubectl apply -f k8s/service-applied.yaml
+        kubectl apply -f k8s/ingress-applied.yaml
+
+    - name: Wait for rollout to complete
+      run: |
+        kubectl rollout status deployment/catalytics-core -n ${{ env.NAMESPACE }} --timeout=600s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=catalytics-core
+        kubectl wait --for=condition=available deployment/catalytics-core -n ${{ env.NAMESPACE }} --timeout=300s
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=catalytics-core --field-selector=status.phase=Running
+
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        rm -f k8s/*-applied.yaml

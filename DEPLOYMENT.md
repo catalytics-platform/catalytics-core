@@ -1,0 +1,214 @@
+# Catalytics Core - EKS Deployment Guide
+
+This guide covers deploying the Catalytics Core Rust application to your Fiji Solutions EKS infrastructure.
+
+## 🏗️ Infrastructure Overview
+
+**Environments:**
+- **Staging**: `fiji-staging-cluster` → `staging.api.app.catalytics.pro`
+- **Production**: `fiji-prod-cluster` → `api.app.catalytics.pro`
+
+**Deployment Features:**
+- ARM64-optimized Docker containers for Graviton2 instances
+- Database migrations via init containers
+- Auto-scaling with HPA
+- SSL termination with ACM certificates
+- Health checks and readiness probes
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
+
+Ensure you have the required GitHub secrets configured:
+
+**Staging Secrets:**
+- `STAGING_DATABASE_URL` - PostgreSQL connection string
+- `STAGING_CERTIFICATE_ARN` - ACM certificate ARN for staging domain
+
+**Production Secrets:**
+- `PROD_DATABASE_URL` - PostgreSQL connection string  
+- `PROD_CERTIFICATE_ARN` - ACM certificate ARN for production domain
+
+**Shared Secrets:**
+- `AWS_ACCESS_KEY_ID_PROD` - AWS access key
+- `AWS_SECRET_ACCESS_KEY_PROD` - AWS secret key
+
+### 2. Automatic Deployment
+
+**Deploy to Staging:**
+```bash
+# Push to main branch triggers staging deployment
+git push origin main
+```
+
+**Deploy to Production:**
+```bash
+# Manual workflow dispatch required for production
+# Go to GitHub Actions → Deploy Catalytics Core → Run workflow → Select "production"
+```
+
+### 3. Manual Deployment
+
+**Build and deploy locally:**
+```bash
+# Build the application image
+docker buildx build --platform linux/arm64 -t catalytics-core:local .
+
+# Build the migration image  
+docker buildx build --platform linux/arm64 -f Dockerfile.migrations -t catalytics-migrations:local .
+
+# Configure kubectl
+aws eks update-kubeconfig --region eu-central-1 --name fiji-staging-cluster
+
+# Deploy to staging
+kubectl create namespace catalytics-core-staging --dry-run=client -o yaml | kubectl apply -f -
+
+# Set environment variables and deploy
+export NAMESPACE=catalytics-core-staging
+export ENVIRONMENT=staging
+export IMAGE=your-ecr-url/fiji-cors-anywhere:catalytics-core-latest
+export MIGRATION_IMAGE=your-ecr-url/fiji-cors-anywhere:catalytics-migrations-latest
+export DATABASE_URL="postgres://user:pass@host:5432/db"
+export CERTIFICATE_ARN="arn:aws:acm:eu-central-1:account:certificate/cert-id"
+export DOMAIN=staging.api.app.catalytics.pro
+export REPLICAS=1
+export MIN_REPLICAS=1
+export MAX_REPLICAS=3
+export ALB_GROUP_NAME=staging-shared-alb
+export RUST_LOG="catalytics_core=info,sqlx=warn"
+
+# Apply manifests
+envsubst < k8s/deployment.yaml | kubectl apply -f -
+envsubst < k8s/service.yaml | kubectl apply -f -  
+envsubst < k8s/ingress.yaml | kubectl apply -f -
+```
+
+## 🔧 Application Configuration
+
+### Environment Variables
+
+| Variable | Description                  | Required |
+|----------|------------------------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `PORT` | Server port (default: 3000)  | No |
+| `RUST_LOG` | Logging configuration        | No |
+
+### Health Endpoints
+
+- **Health Check**: `GET /api/k8s/health` - Basic health status
+- **Readiness Check**: `GET /api/k8s/ready` - Application ready status
+
+## 🗃️ Database Migrations
+
+Database migrations run automatically via init containers before the main application starts.
+
+**Migration Process:**
+1. Init container runs `sqlx migrate run`
+2. SQLx migrations in `/migrations/` directory are applied
+3. Main application starts only after successful migration
+
+**Manual Migration:**
+```bash
+# Install SQLx CLI (if not already installed)
+cargo install sqlx-cli --no-default-features --features postgres
+
+# Run migrations manually
+sqlx migrate run
+```
+
+**SQLx Offline Mode (for Docker builds):**
+```bash
+# If you encounter SQLx compilation issues in Docker builds, 
+# prepare offline data with a local database first:
+cargo sqlx prepare
+
+# This generates sqlx-data.json for offline compilation
+# Then uncomment SQLX_OFFLINE=true in Dockerfile
+```
+
+## 📁 File Structure
+
+```
+catalytics-core/
+├── .github/workflows/
+│   └── deploy.yml              # CI/CD pipeline
+├── k8s/
+│   ├── deployment.yaml         # Kubernetes deployment with init container
+│   ├── service.yaml           # Service definition
+│   └── ingress.yaml           # ALB ingress with SSL
+├── migrations/
+│   └── *.sql                  # SQLx migration files
+├── src/
+│   └── ...                    # Application source
+├── Dockerfile                 # Main application image
+├── Dockerfile.migrations      # Migration runner image
+└── .dockerignore             # Docker build exclusions
+```
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**1. Migration Failures**
+```bash
+# Check init container logs
+kubectl logs -l app=catalytics-core -c db-migrate -n catalytics-core-staging
+```
+
+**2. Application Not Starting**
+```bash
+# Check application logs
+kubectl logs -l app=catalytics-core -c catalytics-core -n catalytics-core-staging
+
+# Check events
+kubectl get events -n catalytics-core-staging --sort-by='.lastTimestamp'
+```
+
+**3. Ingress Issues**
+```bash
+# Check ALB creation
+kubectl describe ingress catalytics-core-ingress -n catalytics-core-staging
+
+# Verify certificate
+aws acm describe-certificate --certificate-arn YOUR_CERT_ARN --region eu-central-1
+```
+
+### Health Check Commands
+
+```bash
+# Test health endpoint locally
+curl http://localhost:3000/api/k8s/health
+
+# Test via kubectl port-forward
+kubectl port-forward service/catalytics-core-service 3000:80 -n catalytics-core-staging
+curl http://localhost:3000/api/k8s/health
+
+# Check pod readiness
+kubectl get pods -l app=catalytics-core -n catalytics-core-staging
+```
+
+## 🏷️ Resource Management
+
+**Staging Configuration:**
+- Replicas: 1
+- CPU: 100m request, 200m limit
+- Memory: 128Mi request, 256Mi limit
+- Auto-scaling: 1-3 replicas
+
+**Production Configuration:**
+- Replicas: 2  
+- CPU: 100m request, 200m limit
+- Memory: 128Mi request, 256Mi limit
+- Auto-scaling: 2-10 replicas
+
+## 🔐 Security
+
+- Non-root container execution (user ID 1000)
+- Read-only root filesystem capability
+- No privilege escalation
+- Kubernetes secrets for sensitive data
+- SSL/TLS termination at ALB level
+
+---
+
+For infrastructure questions, refer to the main infrastructure repository documentation.
