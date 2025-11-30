@@ -5,7 +5,6 @@ FROM --platform=linux/arm64 rust:1.91-slim AS builder
 
 # Set environment variables for build
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
-ENV RUSTFLAGS="-C target-feature=+crt-static"
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
