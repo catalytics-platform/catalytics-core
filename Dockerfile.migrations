@@ -1,13 +1,13 @@
 # Migration runner for Catalytics Core using SQLx CLI
 # Using ARM64 architecture for AWS Graviton2 compatibility
 
-FROM --platform=linux/arm64 rust:1.78-slim AS builder
+FROM rust:1.91-slim AS builder
 
 # Install SQLx CLI with only postgres support for smaller binary
 RUN cargo install sqlx-cli --no-default-features --features postgres
 
 # Runtime stage
-FROM --platform=linux/arm64 debian:bookworm-slim
+FROM debian:bookworm-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
