@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM beta_applicants WHERE public_key = $1",
+  "query": "SELECT * FROM beta_applicants WHERE referral_code = $1",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       true
     ]
   },
-  "hash": "66521951491685934b32444514fe7f097e51cfbd9fa7d95a2d444d76b58e414b"
+  "hash": "fe662a027cb882ba5d1efa3f10080540ac72a744bb0f2b857b1305eff96f2daa"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM beta_applicants WHERE public_key = $1",
+  "query": "INSERT INTO beta_applicants (public_key, referral_code, referred_by_id) VALUES ($1, $2, $3) RETURNING id, public_key, email, created_at, referral_code, referred_by_id",
   "describe": {
     "columns": [
       {
@@ -36,7 +36,9 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "Text",
+        "Int4"
       ]
     },
     "nullable": [
@@ -48,5 +50,5 @@
       true
     ]
   },
-  "hash": "66521951491685934b32444514fe7f097e51cfbd9fa7d95a2d444d76b58e414b"
+  "hash": "9aba998b9e66c01f763e66b9023f09101cbce24433d6fc1355d5953df9ebec32"
 }
