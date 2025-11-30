@@ -24,13 +24,13 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release && rm -rf src
 
-# Copy source code and migrations
+# Copy source code, migrations, and SQLx offline data
 COPY src/ ./src/
 COPY migrations/ ./migrations/
+COPY .sqlx/ ./.sqlx/
 
-# Build the actual application
-# For offline mode, we'd need sqlx-data.json. For now, build without offline mode
-# and rely on the migration init container to handle database setup
+# Build the actual application in offline mode
+ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 # Production stage
