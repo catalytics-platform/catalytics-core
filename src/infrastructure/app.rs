@@ -9,8 +9,8 @@ pub fn create_app(app_state: AppState) -> Router {
 
     let cors = CorsLayer::new()
         .allow_origin([
-            "https://api.app.catalytics.pro".parse().unwrap(),
-            "https://staging.api.app.catalytics.pro".parse().unwrap(),
+            "https://app.catalytics.pro".parse().unwrap(),
+            "https://staging.app.catalytics.pro".parse().unwrap(),
             "http://localhost:4200".parse().unwrap(),
         ])
         .allow_methods([http::Method::GET, http::Method::POST, http::Method::PATCH])
