@@ -21,7 +21,7 @@ env:
 jobs:
   build:
     name: Build and Push Images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-arm
     outputs:
       app-image-tag: ${{ steps.build-app.outputs.image-tag }}
       app-image-uri: ${{ steps.build-app.outputs.image-uri }}
@@ -51,7 +51,6 @@ jobs:
         IMAGE_TAG: catalytics-core-${{ github.sha }}
       run: |
         docker buildx build \
-          --platform linux/arm64 \
           --push \
           -f Dockerfile \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
@@ -68,7 +67,6 @@ jobs:
         MIGRATION_TAG: catalytics-migrations-${{ github.sha }}
       run: |
         docker buildx build \
-          --platform linux/arm64 \
           --push \
           -f Dockerfile.migrations \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$MIGRATION_TAG \
