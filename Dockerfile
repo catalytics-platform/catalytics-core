@@ -1,7 +1,7 @@
 # Multi-stage build for Catalytics Core Rust application
 # Using ARM64 architecture for AWS Graviton2 compatibility
 
-FROM --platform=linux/arm64 rust:1.82-slim AS builder
+FROM --platform=linux/arm64 rust:1.91-slim AS builder
 
 # Set environment variables for build
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
