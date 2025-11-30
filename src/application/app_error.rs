@@ -7,6 +7,9 @@ pub enum AppError {
 
     #[error("Internal error: {0}")]
     Internal(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
 }
 
 pub type AppResult<T> = Result<T, AppError>;

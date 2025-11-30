@@ -16,6 +16,9 @@ impl PostgresPersistence {
 
 impl From<sqlx::Error> for AppError {
     fn from(value: Error) -> Self {
-        AppError::Database(value.to_string())
+        match value {
+            sqlx::Error::RowNotFound => AppError::NotFound("Resource not found".to_string()),
+            _ => AppError::Database(value.to_string()),
+        }
     }
 }
