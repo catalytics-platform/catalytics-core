@@ -7,17 +7,19 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
-use axum::{Json, Router};
+use axum::{middleware, Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
+use crate::adapters::http::middleware::auth_middleware;
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_beta_applicant))
         .route("/", get(read_beta_applicant))
         .route("/", patch(update_beta_applicant))
+        .layer(middleware::from_fn(auth_middleware))
 }
 
 #[derive(Debug, Clone, Serialize)]
