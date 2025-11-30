@@ -67,11 +67,16 @@ impl BetaApplicantPersistence for PostgresPersistence {
             .collect();
 
         let referrer_id = match referral_code {
-            Some(referral_code_value) => Some(
-                self.read_beta_applicant_by_referral_code(referral_code_value)
-                    .await?
-                    .id,
-            ),
+            Some(referral_code_value) => {
+                match self
+                    .read_beta_applicant_by_referral_code(referral_code_value)
+                    .await
+                {
+                    Ok(referrer) => Some(referrer.id),
+                    Err(AppError::NotFound(_)) => None,
+                    Err(e) => return Err(e),
+                }
+            }
             None => None,
         };
 

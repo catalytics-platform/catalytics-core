@@ -23,10 +23,7 @@ impl IntoResponse for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),
             ),
-            AppError::NotFound(_) => (
-                StatusCode::NOT_FOUND,
-                "Resource not found".to_string(),
-            ),
+            AppError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found".to_string()),
         };
 
         let error_response = ErrorResponse {
