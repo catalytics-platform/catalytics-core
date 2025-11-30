@@ -6,6 +6,7 @@ use axum::Router;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .nest("/beta-applicants", beta_applicant::router())
+        .nest("/beta-applicants", beta_applicant::private_router())
+        .nest("/beta-applicants", beta_applicant::public_router())
         .nest("/k8s", health::router())
 }

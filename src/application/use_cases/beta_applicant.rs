@@ -22,6 +22,7 @@ pub trait BetaApplicantPersistence: Send + Sync {
         public_key: &str,
         email: &str,
     ) -> AppResult<BetaApplicant>;
+    async fn count_beta_applicants(&self) -> AppResult<i64>;
 }
 
 #[derive(Clone)]
@@ -59,6 +60,11 @@ impl BetaApplicantUseCases {
             .persistence
             .update_beta_applicant(public_key, email)
             .await?;
+        Ok(applicant)
+    }
+
+    pub async fn count(&self) -> AppResult<i64> {
+        let applicant = self.persistence.count_beta_applicants().await?;
         Ok(applicant)
     }
 }

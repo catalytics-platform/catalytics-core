@@ -154,4 +154,14 @@ impl BetaApplicantPersistence for PostgresPersistence {
 
         Ok(self.convert_to_beta_applicant(beta_applicant).await?)
     }
+
+    async fn count_beta_applicants(&self) -> AppResult<i64> {
+        let beta_applicants_count = sqlx::query_scalar!("SELECT count(*) FROM beta_applicants")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(AppError::from)?
+            .unwrap_or(0);
+
+        Ok(beta_applicants_count)
+    }
 }

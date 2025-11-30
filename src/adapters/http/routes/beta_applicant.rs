@@ -14,12 +14,16 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
 
-pub fn router() -> Router<AppState> {
+pub fn private_router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_beta_applicant))
         .route("/", get(read_beta_applicant))
         .route("/", patch(update_beta_applicant))
         .layer(middleware::from_fn(auth_middleware))
+}
+
+pub fn public_router() -> Router<AppState> {
+    Router::new().route("/count", get(count_beta_applicant))
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -30,6 +34,12 @@ struct BetaApplicantResponse {
     registered_since: DateTime<Utc>,
     referral_code: String,
     referred_by: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BetaApplicantsCountResponse {
+    count: i64,
 }
 
 impl From<BetaApplicant> for BetaApplicantResponse {
@@ -93,4 +103,18 @@ async fn update_beta_applicant(
         .await?;
 
     Ok((StatusCode::OK, Json(BetaApplicantResponse::from(applicant))))
+}
+
+#[instrument(skip(beta_applicant_use_cases))]
+async fn count_beta_applicant(
+    State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+) -> AppResult<impl IntoResponse> {
+    let applicants_count = beta_applicant_use_cases.count().await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(BetaApplicantsCountResponse {
+            count: applicants_count,
+        }),
+    ))
 }
