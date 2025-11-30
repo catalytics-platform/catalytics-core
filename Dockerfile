@@ -1,7 +1,7 @@
 # Multi-stage build for Catalytics Core Rust application
 # Using ARM64 architecture for AWS Graviton2 compatibility
 
-FROM --platform=linux/arm64 rust:1.78-slim AS builder
+FROM --platform=linux/arm64 rust:1.82-slim AS builder
 
 # Set environment variables for build
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
@@ -29,8 +29,8 @@ COPY src/ ./src/
 COPY migrations/ ./migrations/
 
 # Build the actual application
-# Note: For production builds, you may need to set up SQLX_OFFLINE=true 
-# and run `cargo sqlx prepare` locally first to generate sqlx-data.json
+# For offline mode, we'd need sqlx-data.json. For now, build without offline mode
+# and rely on the migration init container to handle database setup
 RUN cargo build --release
 
 # Production stage
