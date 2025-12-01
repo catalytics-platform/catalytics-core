@@ -41,6 +41,7 @@ impl PostgresPersistence {
 
     async fn convert_to_beta_applicant(&self, db: BetaApplicantDb) -> AppResult<BetaApplicant> {
         let referred_by = self.get_referrer_wallet(db.referred_by_id).await;
+        let referrals_count = self.count_referrals(db.id).await?;
 
         Ok(BetaApplicant {
             id: db.id,
@@ -49,6 +50,7 @@ impl PostgresPersistence {
             created_at: db.created_at,
             referral_code: db.referral_code,
             referred_by,
+            referral_count: referrals_count,
         })
     }
 }
@@ -166,6 +168,19 @@ impl BetaApplicantPersistence for PostgresPersistence {
             .await
             .map_err(AppError::from)?
             .unwrap_or(0);
+
+        Ok(beta_applicants_count)
+    }
+
+    async fn count_referrals(&self, id: i32) -> AppResult<i64> {
+        let beta_applicants_count = sqlx::query_scalar!(
+            "SELECT count(*) FROM beta_applicants WHERE referred_by_id = $1",
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(AppError::from)?
+        .unwrap_or(0);
 
         Ok(beta_applicants_count)
     }

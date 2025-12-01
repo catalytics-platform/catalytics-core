@@ -23,6 +23,7 @@ pub trait BetaApplicantPersistence: Send + Sync {
         email: &str,
     ) -> AppResult<BetaApplicant>;
     async fn count_beta_applicants(&self) -> AppResult<i64>;
+    async fn count_referrals(&self, id: i32) -> AppResult<i64>;
 }
 
 #[derive(Clone)]

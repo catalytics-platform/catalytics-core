@@ -8,4 +8,5 @@ pub struct BetaApplicant {
     pub created_at: DateTime<Utc>,
     pub referral_code: String,
     pub referred_by: Option<String>,
+    pub referral_count: i64,
 }

@@ -34,6 +34,7 @@ struct BetaApplicantResponse {
     registered_since: DateTime<Utc>,
     referral_code: String,
     referred_by: Option<String>,
+    referral_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -50,6 +51,7 @@ impl From<BetaApplicant> for BetaApplicantResponse {
             registered_since: applicant.created_at,
             referral_code: applicant.referral_code,
             referred_by: applicant.referred_by,
+            referral_count: applicant.referral_count,
         }
     }
 }
