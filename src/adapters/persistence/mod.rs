@@ -3,6 +3,7 @@ use sqlx::{Error, PgPool};
 
 mod badge;
 mod beta_applicant;
+mod beta_applicant_badge;
 
 #[derive(Clone)]
 pub struct PostgresPersistence {
