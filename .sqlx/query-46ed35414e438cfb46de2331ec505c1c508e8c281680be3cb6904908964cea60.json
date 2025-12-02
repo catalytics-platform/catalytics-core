@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    b.*,\n    CASE WHEN bab.badge_id IS NOT NULL THEN true ELSE false END AS is_active,\n    bab.created_at AS earned_at\nFROM badges b\nLEFT JOIN beta_applicant_badges bab ON b.id = bab.badge_id AND bab.beta_applicant_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "score",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "earned_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "46ed35414e438cfb46de2331ec505c1c508e8c281680be3cb6904908964cea60"
+}
