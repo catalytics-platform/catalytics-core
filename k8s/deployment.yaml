@@ -32,21 +32,6 @@ spec:
             secretKeyRef:
               name: catalytics-core-secrets
               key: database-url
-        - name: JUPITER_API_BASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: jupiter-api-base-url
-        - name: JUPITER_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: jupiter-api-key
-        - name: CATICS_TOKEN_ADDRESS
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: catics-token-address
         - name: RUST_LOG
           value: "info"
         resources:
@@ -68,6 +53,21 @@ spec:
             secretKeyRef:
               name: catalytics-core-secrets
               key: database-url
+        - name: JUPITER_API_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: catalytics-core-secrets
+              key: jupiter-api-base-url
+        - name: JUPITER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: catalytics-core-secrets
+              key: jupiter-api-key
+        - name: CATICS_TOKEN_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: catalytics-core-secrets
+              key: catics-token-address
         - name: RUST_LOG
           value: "${RUST_LOG}"
         - name: PORT
