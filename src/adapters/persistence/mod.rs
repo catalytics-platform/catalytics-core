@@ -5,7 +5,7 @@ mod badge;
 mod beta_applicant;
 mod beta_applicant_badge;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PostgresPersistence {
     pool: PgPool,
 }

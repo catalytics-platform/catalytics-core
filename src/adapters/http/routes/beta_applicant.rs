@@ -8,11 +8,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
-use axum::{Json, Router, middleware};
+use axum::{middleware, Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
+use crate::use_cases::badge::BadgeUseCases;
 
 pub fn private_router() -> Router<AppState> {
     Router::new()
@@ -66,10 +67,11 @@ struct CreateBetaApplicantRequest {
 async fn create_beta_applicant(
     auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    State(badge_use_cases): State<Arc<BadgeUseCases>>,
     Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
-        .create(&auth.public_key, payload.referral_code.as_deref())
+        .create(&auth.public_key, payload.referral_code.as_deref(), badge_use_cases)
         .await?;
 
     Ok((

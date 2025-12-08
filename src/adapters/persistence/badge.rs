@@ -6,6 +6,7 @@ use crate::use_cases::badge::BadgePersistence;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
 use async_trait::async_trait;
 use std::collections::HashMap;
+use chrono::{DateTime, Utc};
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct BadgeDb {
@@ -13,6 +14,7 @@ pub struct BadgeDb {
     pub title: String,
     pub description: String,
     pub score: i32,
+    pub created_at: DateTime<Utc>,
 }
 
 impl PostgresPersistence {
@@ -31,8 +33,8 @@ impl PostgresPersistence {
             title: badge.title,
             description: badge.description,
             score: badge.score,
-            is_active: earned_map.get(&badge.id).is_some(),
-            earned_at: earned_map.get(&badge.id).map(|badge| badge.created_at),
+            is_unlocked: earned_map.get(&badge.id).is_some(),
+            unlocked_at: earned_map.get(&badge.id).map(|badge| badge.created_at),
         });
 
         Ok(result.collect::<Vec<Badge>>())
@@ -58,5 +60,73 @@ impl BadgePersistence for PostgresPersistence {
         .map_err(AppError::from)?;
 
         Ok(self.convert_to_badges(badges, badges_earned)?)
+    }
+
+    async fn create_badge(&self, public_key: &str, badge_id: i32, value: i32) -> AppResult<()> {
+        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
+
+        sqlx::query!(
+            r#"
+            INSERT INTO beta_applicant_badges (beta_applicant_id, badge_id)
+            SELECT $1, bc.badge_id
+            FROM badge_conditions bc
+            WHERE bc.badge_id = $2
+              AND (
+                (bc.operation = 'eq' AND $3 = bc.required_count) OR
+                (bc.operation = 'gte' AND $3 >= bc.required_count)
+              )
+            ON CONFLICT (beta_applicant_id, badge_id) DO NOTHING
+            "#,
+            applicant_id,
+            badge_id,
+            value
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(())
+    }
+
+    async fn create_catics_badges(&self, public_key: &str, catics_balance: f64) -> AppResult<()>{
+        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
+        let balance_as_int = catics_balance as i32;
+
+        sqlx::query!(
+            r#"
+            INSERT INTO beta_applicant_progressions (beta_applicant_id, progression_event_type_id, progress_count)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (beta_applicant_id, progression_event_type_id)
+            DO UPDATE SET progress_count = EXCLUDED.progress_count
+            "#,
+            applicant_id,
+            2,
+            balance_as_int
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        sqlx::query!(
+            r#"
+            INSERT INTO beta_applicant_badges (beta_applicant_id, badge_id)
+            SELECT $1, bc.badge_id
+            FROM badge_conditions bc
+            WHERE bc.progression_event_type_id = $2
+              AND (
+                (bc.operation = 'eq' AND $3 = bc.required_count) OR
+                (bc.operation = 'gte' AND $3 >= bc.required_count)
+              )
+            ON CONFLICT (beta_applicant_id, badge_id) DO NOTHING
+            "#,
+            applicant_id,
+            2,
+            balance_as_int
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(())
     }
 }

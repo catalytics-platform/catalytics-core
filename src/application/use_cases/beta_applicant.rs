@@ -1,10 +1,12 @@
+use std::fmt::Debug;
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
 use async_trait::async_trait;
 use std::sync::Arc;
+use crate::use_cases::badge::BadgeUseCases;
 
 #[async_trait]
-pub trait BetaApplicantPersistence: Send + Sync {
+pub trait BetaApplicantPersistence: Send + Sync + Debug {
     async fn create_beta_applicant(
         &self,
         public_key: &str,
@@ -26,7 +28,7 @@ pub trait BetaApplicantPersistence: Send + Sync {
     async fn count_referrals(&self, id: i32) -> AppResult<i64>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BetaApplicantUseCases {
     persistence: Arc<dyn BetaApplicantPersistence>,
 }
@@ -40,11 +42,14 @@ impl BetaApplicantUseCases {
         &self,
         public_key: &str,
         referral_code: Option<&str>,
+        badge_use_cases: Arc<BadgeUseCases>,
     ) -> AppResult<BetaApplicant> {
         let applicant = self
             .persistence
             .create_beta_applicant(public_key, referral_code)
             .await?;
+        badge_use_cases.create_badge(public_key, 1, 1).await?;
+        badge_use_cases.create_catics_badges(public_key).await?;
         Ok(applicant)
     }
 

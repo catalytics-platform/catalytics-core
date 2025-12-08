@@ -6,6 +6,6 @@ pub struct Badge {
     pub title: String,
     pub description: String,
     pub score: i32,
-    pub is_active: bool,
-    pub earned_at: Option<DateTime<Utc>>,
+    pub is_unlocked: bool,
+    pub unlocked_at: Option<DateTime<Utc>>,
 }

@@ -27,8 +27,8 @@ struct BadgeResponse {
     title: String,
     description: String,
     score: i32,
-    is_active: bool,
-    earned_at: Option<DateTime<Utc>>,
+    is_unlocked: bool,
+    unlocked_at: Option<DateTime<Utc>>,
 }
 
 impl From<Badge> for BadgeResponse {
@@ -38,8 +38,8 @@ impl From<Badge> for BadgeResponse {
             title: badge.title,
             description: badge.description,
             score: badge.score,
-            is_active: badge.is_active,
-            earned_at: badge.earned_at,
+            is_unlocked: badge.is_unlocked,
+            unlocked_at: badge.unlocked_at,
         }
     }
 }
