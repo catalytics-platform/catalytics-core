@@ -122,6 +122,9 @@ jobs:
       run: |
         # Set staging-specific secrets
         export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
+        export JUPITER_API_BASE_URL="${{ secrets.JUPITER_API_BASE_URL }}"
+        export JUPITER_API_KEY="${{ secrets.STAGING_JUPITER_API_KEY }}"
+        export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export CERTIFICATE_ARN="${{ secrets.STAGING_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
@@ -196,6 +199,9 @@ jobs:
       run: |
         # Set production-specific secrets
         export DATABASE_URL="${{ secrets.PROD_DATABASE_URL }}"
+        export JUPITER_API_BASE_URL="${{ secrets.JUPITER_API_BASE_URL }}"
+        export JUPITER_API_KEY="${{ secrets.PROD_JUPITER_API_KEY }}"
+        export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export CERTIFICATE_ARN="${{ secrets.PROD_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
