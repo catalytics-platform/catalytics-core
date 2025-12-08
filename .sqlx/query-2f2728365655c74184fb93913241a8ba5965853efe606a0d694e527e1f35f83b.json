@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO beta_applicant_progressions (beta_applicant_id, progression_event_type_id, progress_count)\n            VALUES ($1, $2, $3)\n            ON CONFLICT (beta_applicant_id, progression_event_type_id)\n            DO UPDATE SET progress_count = EXCLUDED.progress_count\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2f2728365655c74184fb93913241a8ba5965853efe606a0d694e527e1f35f83b"
+}

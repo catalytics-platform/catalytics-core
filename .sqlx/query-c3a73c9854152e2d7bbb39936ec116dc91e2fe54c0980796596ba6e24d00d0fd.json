@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO beta_applicant_badges (beta_applicant_id, badge_id)\n            SELECT $1, bc.badge_id\n            FROM badge_conditions bc\n            WHERE bc.badge_id = $2\n              AND (\n                (bc.operation = 'eq' AND $3 = bc.required_count) OR\n                (bc.operation = 'gte' AND $3 >= bc.required_count)\n              )\n            ON CONFLICT (beta_applicant_id, badge_id) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c3a73c9854152e2d7bbb39936ec116dc91e2fe54c0980796596ba6e24d00d0fd"
+}
