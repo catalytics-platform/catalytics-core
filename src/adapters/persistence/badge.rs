@@ -2,6 +2,7 @@ use crate::adapters::persistence::PostgresPersistence;
 use crate::adapters::persistence::beta_applicant_badge::BetaApplicantBadgeDb;
 use crate::app_error::{AppError, AppResult};
 use crate::entities::badge::Badge;
+use crate::entities::progression_event_type::ProgressionEventType;
 use crate::use_cases::badge::BadgePersistence;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
 use async_trait::async_trait;
@@ -92,7 +93,11 @@ impl BadgePersistence for PostgresPersistence {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
         let balance_as_int = catics_balance as i32;
         Ok(self
-            .create_badges_for_progression(applicant_id, 2, balance_as_int)
+            .create_badges_for_progression(
+                applicant_id,
+                ProgressionEventType::CaticsBalanceCheck.id(),
+                balance_as_int,
+            )
             .await?)
     }
 
@@ -104,7 +109,11 @@ impl BadgePersistence for PostgresPersistence {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
         let balance_as_int = staked_jup_balance as i32;
         Ok(self
-            .create_badges_for_progression(applicant_id, 5, balance_as_int)
+            .create_badges_for_progression(
+                applicant_id,
+                ProgressionEventType::JupStaked.id(),
+                balance_as_int,
+            )
             .await?)
     }
 
