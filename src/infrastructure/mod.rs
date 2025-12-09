@@ -1,11 +1,11 @@
-use crate::adapters::client::jupiter::HttpJupiterClient;
 use crate::adapters::persistence::PostgresPersistence;
 use crate::infrastructure::database::init_db;
+use crate::infrastructure::wallet_holdings::HttpWalletHoldingClient;
 
 pub mod app;
 pub mod database;
 pub mod setup;
-pub mod jupiter;
+pub mod wallet_holdings;
 
 pub async fn postgres_persistence() -> anyhow::Result<PostgresPersistence> {
     let pool = init_db().await?;
@@ -13,7 +13,7 @@ pub async fn postgres_persistence() -> anyhow::Result<PostgresPersistence> {
     Ok(persistence)
 }
 
-pub async fn wallet_holding_client() -> anyhow::Result<HttpJupiterClient> {
-    let client = HttpJupiterClient::with_defaults()?;
+pub async fn wallet_holding_client() -> anyhow::Result<HttpWalletHoldingClient> {
+    let client = HttpWalletHoldingClient::with_defaults()?;
     Ok(client)
 }

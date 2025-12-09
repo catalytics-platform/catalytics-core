@@ -3,17 +3,17 @@ use crate::adapters::http::middleware::auth::AuthenticatedUser;
 use crate::adapters::http::middleware::auth_middleware;
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
+use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, patch, post};
-use axum::{middleware, Json, Router};
+use axum::{Json, Router, middleware};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
-use crate::use_cases::badge::BadgeUseCases;
 
 pub fn private_router() -> Router<AppState> {
     Router::new()
@@ -71,7 +71,11 @@ async fn create_beta_applicant(
     Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
-        .create(&auth.public_key, payload.referral_code.as_deref(), badge_use_cases)
+        .create(
+            &auth.public_key,
+            payload.referral_code.as_deref(),
+            badge_use_cases,
+        )
         .await?;
 
     Ok((

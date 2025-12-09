@@ -1,9 +1,9 @@
-use std::fmt::Debug;
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
-use async_trait::async_trait;
-use std::sync::Arc;
 use crate::use_cases::badge::BadgeUseCases;
+use async_trait::async_trait;
+use std::fmt::Debug;
+use std::sync::Arc;
 
 #[async_trait]
 pub trait BetaApplicantPersistence: Send + Sync + Debug {

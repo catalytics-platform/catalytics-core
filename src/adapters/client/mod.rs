@@ -1,1 +1,1 @@
-pub mod jupiter;
+pub mod wallet_holdings;

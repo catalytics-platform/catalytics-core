@@ -1,3 +1,3 @@
+pub mod client;
 pub mod http;
 pub mod persistence;
-pub mod client;

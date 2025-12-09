@@ -5,8 +5,8 @@ use crate::entities::badge::Badge;
 use crate::use_cases::badge::BadgePersistence;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
 use async_trait::async_trait;
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct BadgeDb {
@@ -88,10 +88,33 @@ impl BadgePersistence for PostgresPersistence {
         Ok(())
     }
 
-    async fn create_catics_badges(&self, public_key: &str, catics_balance: f64) -> AppResult<()>{
+    async fn create_catics_badges(&self, public_key: &str, catics_balance: f64) -> AppResult<()> {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
         let balance_as_int = catics_balance as i32;
+        Ok(self
+            .create_badges_for_progression(applicant_id, 2, balance_as_int)
+            .await?)
+    }
 
+    async fn create_staked_jup_badges(
+        &self,
+        public_key: &str,
+        staked_jup_balance: f64,
+    ) -> AppResult<()> {
+        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
+        let balance_as_int = staked_jup_balance as i32;
+        Ok(self
+            .create_badges_for_progression(applicant_id, 5, balance_as_int)
+            .await?)
+    }
+
+    // todo: remove progress_count, query db
+    async fn create_badges_for_progression(
+        &self,
+        applicant_id: i32,
+        progression_event_type_id: i32,
+        progress_count: i32,
+    ) -> AppResult<()> {
         sqlx::query!(
             r#"
             INSERT INTO beta_applicant_progressions (beta_applicant_id, progression_event_type_id, progress_count)
@@ -100,12 +123,12 @@ impl BadgePersistence for PostgresPersistence {
             DO UPDATE SET progress_count = EXCLUDED.progress_count
             "#,
             applicant_id,
-            2,
-            balance_as_int
+            progression_event_type_id,
+            progress_count
         )
-        .execute(&self.pool)
-        .await
-        .map_err(AppError::from)?;
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::from)?;
 
         sqlx::query!(
             r#"
@@ -120,8 +143,8 @@ impl BadgePersistence for PostgresPersistence {
             ON CONFLICT (beta_applicant_id, badge_id) DO NOTHING
             "#,
             applicant_id,
-            2,
-            balance_as_int
+            progression_event_type_id,
+            progress_count
         )
         .execute(&self.pool)
         .await
