@@ -9,6 +9,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .nest("/beta-applicants", beta_applicant::private_router())
         .nest("/beta-applicants", beta_applicant::public_router())
-        .nest("/badges", badge::router())
+        .nest("/badges", badge::private_router())
+        .nest("/badges", badge::public_router())
         .nest("/k8s", health::router())
 }

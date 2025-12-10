@@ -14,10 +14,15 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
 
-pub fn router() -> Router<AppState> {
+pub fn private_router() -> Router<AppState> {
     Router::new()
         .route("/", get(read_badges))
         .layer(middleware::from_fn(auth_middleware))
+}
+
+pub fn public_router() -> Router<AppState> {
+    Router::new()
+        .route("/sync", get(sync_user_badges))
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -68,4 +73,19 @@ async fn read_badges(
                 .collect::<Vec<_>>(),
         ),
     ))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SyncUserBadgesQueryParams {
+    public_key: String,
+}
+
+#[instrument(skip(badge_use_cases))]
+async fn sync_user_badges(
+    Query(params): Query<SyncUserBadgesQueryParams>,
+    State(badge_use_cases): State<Arc<BadgeUseCases>>,
+) -> AppResult<impl IntoResponse> {
+    badge_use_cases.sync_user_badges(&params.public_key).await?;
+    Ok(StatusCode::OK)
 }

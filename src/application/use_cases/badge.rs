@@ -42,10 +42,15 @@ impl BadgeUseCases {
     }
 
     pub async fn read_all(&self, public_key: &str, group_id: i32) -> AppResult<Vec<Badge>> {
-        self.create_catics_badges(public_key).await?;
-        self.create_staked_jup_badges(public_key).await?;
         let badges = self.persistence.read_badges(public_key, group_id).await?;
         Ok(badges)
+    }
+
+    pub async fn sync_user_badges(&self, public_key: &str) -> AppResult<()> {
+        self.create_badge(public_key, 1, 1).await?;
+        self.create_catics_badges(public_key).await?;
+        self.create_staked_jup_badges(public_key).await?;
+        Ok(())
     }
 
     pub async fn create_badge(&self, public_key: &str, badge_id: i32, value: i32) -> AppResult<()> {
