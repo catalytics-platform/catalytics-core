@@ -44,9 +44,9 @@ impl PostgresPersistence {
 
 #[async_trait]
 impl BadgePersistence for PostgresPersistence {
-    async fn read_badges(&self, public_key: &str) -> AppResult<Vec<Badge>> {
+    async fn read_badges(&self, public_key: &str, group_id: i32) -> AppResult<Vec<Badge>> {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
-        let badges = sqlx::query_as!(BadgeDb, "SELECT * FROM badges")
+        let badges = sqlx::query_as!(BadgeDb, "SELECT b.* FROM badges b INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id WHERE bgc.badge_group_id = $1 ORDER BY bgc.sort_order", group_id)
             .fetch_all(&self.pool)
             .await
             .map_err(AppError::from)?;

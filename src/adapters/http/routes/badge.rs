@@ -4,13 +4,13 @@ use crate::adapters::http::middleware::auth_middleware;
 use crate::app_error::AppResult;
 use crate::entities::badge::Badge;
 use crate::use_cases::badge::BadgeUseCases;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router, middleware};
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -44,12 +44,21 @@ impl From<Badge> for BadgeResponse {
     }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReadBadgesQueryParams {
+    group_id: i32,
+}
+
 #[instrument(skip(badge_use_cases))]
 async fn read_badges(
     auth: AuthenticatedUser,
+    Query(params): Query<ReadBadgesQueryParams>,
     State(badge_use_cases): State<Arc<BadgeUseCases>>,
 ) -> AppResult<impl IntoResponse> {
-    let badges = badge_use_cases.read_all(&auth.public_key).await?;
+    let badges = badge_use_cases
+        .read_all(&auth.public_key, params.group_id)
+        .await?;
     Ok((
         StatusCode::OK,
         Json(

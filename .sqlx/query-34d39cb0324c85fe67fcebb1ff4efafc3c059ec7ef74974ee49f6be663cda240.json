@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM badges",
+  "query": "SELECT b.* FROM badges b INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id WHERE bgc.badge_group_id = $1 ORDER BY bgc.sort_order",
   "describe": {
     "columns": [
       {
@@ -30,7 +30,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int4"
+      ]
     },
     "nullable": [
       false,
@@ -40,5 +42,5 @@
       false
     ]
   },
-  "hash": "0817251bd2d321dec60531ff582963b0ee7689b847158252b8ac49a5d28a118f"
+  "hash": "34d39cb0324c85fe67fcebb1ff4efafc3c059ec7ef74974ee49f6be663cda240"
 }
