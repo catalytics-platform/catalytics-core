@@ -68,6 +68,16 @@ spec:
             secretKeyRef:
               name: catalytics-core-secrets
               key: catics-token-address
+        - name: JUP_TOKEN_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: catalytics-core-secrets
+              key: jup-token-address
+        - name: CATALYTICS_API_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: catalytics-core-secrets
+              key: catalytics-api-base-url
         - name: RUST_LOG
           value: "${RUST_LOG}"
         - name: PORT
@@ -116,6 +126,8 @@ stringData:
   jupiter-api-base-url: "${JUPITER_API_BASE_URL}"
   jupiter-api-key: "${JUPITER_API_KEY}"
   catics-token-address: "${CATICS_TOKEN_ADDRESS}"
+  jup-token-address: "${JUP_TOKEN_ADDRESS}"
+  catalytics-api-base-url: "${CATALYTICS_API_BASE_URL}"
 
 ---
 apiVersion: autoscaling/v2
