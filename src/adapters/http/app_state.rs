@@ -1,14 +1,16 @@
 use crate::use_cases::badge::BadgeUseCases;
+use crate::use_cases::badge_group::BadgeGroupUseCases;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
+use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
 use axum::extract::FromRef;
 use std::sync::Arc;
-use crate::use_cases::badge_group::BadgeGroupUseCases;
 
 #[derive(Clone)]
 pub struct AppState {
     pub beta_applicant_use_cases: Arc<BetaApplicantUseCases>,
     pub badge_use_cases: Arc<BadgeUseCases>,
     pub badge_group_use_cases: Arc<BadgeGroupUseCases>,
+    pub beta_applicant_progression_use_cases: Arc<BetaApplicantProgressionUseCases>,
 }
 
 impl FromRef<AppState> for Arc<BetaApplicantUseCases> {
@@ -26,5 +28,11 @@ impl FromRef<AppState> for Arc<BadgeUseCases> {
 impl FromRef<AppState> for Arc<BadgeGroupUseCases> {
     fn from_ref(app_state: &AppState) -> Self {
         app_state.badge_group_use_cases.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<BetaApplicantProgressionUseCases> {
+    fn from_ref(app_state: &AppState) -> Self {
+        app_state.beta_applicant_progression_use_cases.clone()
     }
 }

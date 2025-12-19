@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT bap.progression_event_type_id, bap.progress_count, pet.event_type\n             FROM beta_applicant_progressions bap\n             INNER JOIN progression_event_types pet ON bap.progression_event_type_id = pet.id  \n             WHERE bap.beta_applicant_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "progression_event_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "progress_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "event_type",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9c97d4865c8a1ae27862bcf468315580134ad15ad9168246d8c4635997d9945c"
+}

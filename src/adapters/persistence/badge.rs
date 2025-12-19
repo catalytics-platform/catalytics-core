@@ -2,6 +2,7 @@ use crate::adapters::persistence::PostgresPersistence;
 use crate::adapters::persistence::beta_applicant_badge::BetaApplicantBadgeDb;
 use crate::app_error::{AppError, AppResult};
 use crate::entities::badge::Badge;
+use crate::entities::badge_requirement::BadgeRequirement;
 use crate::entities::progression_event_type::ProgressionEventType;
 use crate::use_cases::badge::BadgePersistence;
 use crate::use_cases::beta_applicant::BetaApplicantPersistence;
@@ -22,24 +23,30 @@ impl PostgresPersistence {
     fn convert_to_badges(
         &self,
         badges: Vec<BadgeDb>,
+        badge_groups: Vec<(i32, i32)>,
         badges_earned: Vec<BetaApplicantBadgeDb>,
     ) -> AppResult<Vec<Badge>> {
-        let earned_map = badges_earned
+        let group_map: HashMap<i32, i32> = badge_groups.into_iter().collect();
+        let earned_map: HashMap<i32, BetaApplicantBadgeDb> = badges_earned
             .into_iter()
             .map(|badge| (badge.badge_id, badge))
-            .collect::<HashMap<_, _>>();
+            .collect();
 
-        let result = badges.into_iter().map(|badge| Badge {
-            id: badge.id,
-            title: badge.title,
-            description: badge.description,
-            score: badge.score,
-            is_unlocked: earned_map.get(&badge.id).is_some(),
-            unlocked_at: earned_map.get(&badge.id).map(|badge| badge.created_at),
-            created_at: badge.created_at,
-        });
+        let result = badges
+            .into_iter()
+            .map(|badge| Badge {
+                id: badge.id,
+                title: badge.title,
+                description: badge.description,
+                score: badge.score,
+                is_unlocked: earned_map.get(&badge.id).is_some(),
+                unlocked_at: earned_map.get(&badge.id).map(|b| b.created_at),
+                created_at: badge.created_at,
+                badge_group_id: *group_map.get(&badge.id).unwrap_or(&0),
+            })
+            .collect();
 
-        Ok(result.collect::<Vec<Badge>>())
+        Ok(result)
     }
 }
 
@@ -47,10 +54,25 @@ impl PostgresPersistence {
 impl BadgePersistence for PostgresPersistence {
     async fn read_badges(&self, public_key: &str) -> AppResult<Vec<Badge>> {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
-        let badges = sqlx::query_as!(BadgeDb, "SELECT b.* FROM badges b INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id ORDER BY bgc.badge_group_id, bgc.sort_order")
-            .fetch_all(&self.pool)
-            .await
-            .map_err(AppError::from)?;
+
+        let badges = sqlx::query_as!(
+            BadgeDb,
+            "SELECT b.* FROM badges b 
+             INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id 
+             ORDER BY bgc.badge_group_id, bgc.sort_order"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        let badge_groups =
+            sqlx::query!("SELECT badge_id, badge_group_id FROM badge_group_conjunctions")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(AppError::from)?
+                .into_iter()
+                .map(|row| (row.badge_id, row.badge_group_id))
+                .collect::<Vec<(i32, i32)>>();
 
         let badges_earned = sqlx::query_as!(
             BetaApplicantBadgeDb,
@@ -61,7 +83,30 @@ impl BadgePersistence for PostgresPersistence {
         .await
         .map_err(AppError::from)?;
 
-        Ok(self.convert_to_badges(badges, badges_earned)?)
+        Ok(self.convert_to_badges(badges, badge_groups, badges_earned)?)
+    }
+
+    async fn read_badge_requirements(&self) -> AppResult<Vec<BadgeRequirement>> {
+        let requirements = sqlx::query!(
+            "SELECT bc.badge_id, pet.event_type, bc.operation, bc.required_count
+             FROM badge_conditions bc
+             INNER JOIN progression_event_types pet ON bc.progression_event_type_id = pet.id"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        let result = requirements
+            .into_iter()
+            .map(|row| BadgeRequirement {
+                badge_id: row.badge_id,
+                progression_event_type: row.event_type,
+                operation: row.operation,
+                required_count: row.required_count,
+            })
+            .collect();
+
+        Ok(result)
     }
 
     async fn create_badge(&self, public_key: &str, badge_id: i32, value: i32) -> AppResult<()> {
@@ -90,55 +135,13 @@ impl BadgePersistence for PostgresPersistence {
         Ok(())
     }
 
-    async fn create_catics_badges(&self, public_key: &str, catics_balance: f64) -> AppResult<()> {
-        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
-        let balance_as_int = catics_balance as i32;
-        Ok(self
-            .create_badges_for_progression(
-                applicant_id,
-                ProgressionEventType::CaticsBalanceCheck.id(),
-                balance_as_int,
-            )
-            .await?)
-    }
-
-    async fn create_staked_jup_badges(
+    async fn award_badge_if_eligible(
         &self,
         public_key: &str,
-        staked_jup_balance: f64,
-    ) -> AppResult<()> {
-        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
-        let balance_as_int = staked_jup_balance as i32;
-        Ok(self
-            .create_badges_for_progression(
-                applicant_id,
-                ProgressionEventType::JupStaked.id(),
-                balance_as_int,
-            )
-            .await?)
-    }
-
-    // todo: remove progress_count, query db
-    async fn create_badges_for_progression(
-        &self,
-        applicant_id: i32,
-        progression_event_type_id: i32,
+        event_type: ProgressionEventType,
         progress_count: i32,
     ) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-            INSERT INTO beta_applicant_progressions (beta_applicant_id, progression_event_type_id, progress_count)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (beta_applicant_id, progression_event_type_id)
-            DO UPDATE SET progress_count = EXCLUDED.progress_count
-            "#,
-            applicant_id,
-            progression_event_type_id,
-            progress_count
-        )
-            .execute(&self.pool)
-            .await
-            .map_err(AppError::from)?;
+        let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
 
         sqlx::query!(
             r#"
@@ -153,7 +156,7 @@ impl BadgePersistence for PostgresPersistence {
             ON CONFLICT (beta_applicant_id, badge_id) DO NOTHING
             "#,
             applicant_id,
-            progression_event_type_id,
+            event_type.id(),
             progress_count
         )
         .execute(&self.pool)

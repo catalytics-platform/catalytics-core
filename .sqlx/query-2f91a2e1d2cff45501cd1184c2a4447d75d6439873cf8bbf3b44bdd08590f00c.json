@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT progress_count FROM beta_applicant_progressions \n             WHERE beta_applicant_id = $1 AND progression_event_type_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "progress_count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2f91a2e1d2cff45501cd1184c2a4447d75d6439873cf8bbf3b44bdd08590f00c"
+}

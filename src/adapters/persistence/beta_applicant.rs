@@ -184,4 +184,20 @@ impl BetaApplicantPersistence for PostgresPersistence {
 
         Ok(beta_applicants_count)
     }
+
+    async fn count_referrals_by_public_key(&self, public_key: &str) -> AppResult<i32> {
+        let referral_count = sqlx::query_scalar!(
+            "SELECT count(*) FROM beta_applicants ba1
+             WHERE ba1.referred_by_id = (
+                 SELECT ba2.id FROM beta_applicants ba2 WHERE ba2.public_key = $1
+             )",
+            public_key
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(AppError::from)?
+        .unwrap_or(0);
+
+        Ok(referral_count as i32)
+    }
 }

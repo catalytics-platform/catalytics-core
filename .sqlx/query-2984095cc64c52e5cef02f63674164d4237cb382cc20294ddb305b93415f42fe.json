@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT bc.badge_id, pet.event_type, bc.operation, bc.required_count\n             FROM badge_conditions bc\n             INNER JOIN progression_event_types pet ON bc.progression_event_type_id = pet.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "badge_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "event_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "operation",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "required_count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2984095cc64c52e5cef02f63674164d4237cb382cc20294ddb305b93415f42fe"
+}

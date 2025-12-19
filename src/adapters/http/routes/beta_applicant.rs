@@ -5,6 +5,7 @@ use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
+use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -67,6 +68,7 @@ struct CreateBetaApplicantRequest {
 async fn create_beta_applicant(
     auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    State(progression_use_cases): State<Arc<BetaApplicantProgressionUseCases>>,
     State(badge_use_cases): State<Arc<BadgeUseCases>>,
     Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
@@ -74,6 +76,7 @@ async fn create_beta_applicant(
         .create(
             &auth.public_key,
             payload.referral_code.as_deref(),
+            progression_use_cases,
             badge_use_cases,
         )
         .await?;

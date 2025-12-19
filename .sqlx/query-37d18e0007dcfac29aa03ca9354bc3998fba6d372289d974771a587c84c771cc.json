@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) FROM beta_applicants ba1\n             WHERE ba1.referred_by_id = (\n                 SELECT ba2.id FROM beta_applicants ba2 WHERE ba2.public_key = $1\n             )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "37d18e0007dcfac29aa03ca9354bc3998fba6d372289d974771a587c84c771cc"
+}

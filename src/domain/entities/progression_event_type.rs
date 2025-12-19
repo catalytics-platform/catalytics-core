@@ -5,6 +5,7 @@ pub enum ProgressionEventType {
     MineSeason0 = 3,
     CatLevelUp = 4,
     JupStaked = 5,
+    ReferralCreated = 6,
 }
 
 impl ProgressionEventType {

@@ -2,9 +2,10 @@ use crate::app_error::AppError;
 use sqlx::{Error, PgPool};
 
 mod badge;
+mod badge_group;
 mod beta_applicant;
 mod beta_applicant_badge;
-mod badge_group;
+mod beta_applicant_progression;
 
 #[derive(Clone, Debug)]
 pub struct PostgresPersistence {

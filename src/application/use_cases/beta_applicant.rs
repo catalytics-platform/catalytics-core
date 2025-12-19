@@ -1,6 +1,8 @@
 use crate::app_error::AppResult;
 use crate::entities::beta_applicant::BetaApplicant;
+use crate::entities::progression_event_type::ProgressionEventType;
 use crate::use_cases::badge::BadgeUseCases;
+use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
 use async_trait::async_trait;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -26,6 +28,7 @@ pub trait BetaApplicantPersistence: Send + Sync + Debug {
     ) -> AppResult<BetaApplicant>;
     async fn count_beta_applicants(&self) -> AppResult<i64>;
     async fn count_referrals(&self, id: i32) -> AppResult<i64>;
+    async fn count_referrals_by_public_key(&self, public_key: &str) -> AppResult<i32>;
 }
 
 #[derive(Clone, Debug)]
@@ -42,14 +45,22 @@ impl BetaApplicantUseCases {
         &self,
         public_key: &str,
         referral_code: Option<&str>,
+        progression_use_cases: Arc<BetaApplicantProgressionUseCases>,
         badge_use_cases: Arc<BadgeUseCases>,
     ) -> AppResult<BetaApplicant> {
         let applicant = self
             .persistence
             .create_beta_applicant(public_key, referral_code)
             .await?;
-        badge_use_cases.create_badge(public_key, 1, 1).await?;
-        badge_use_cases.create_catics_badges(public_key).await?;
+
+        progression_use_cases
+            .record_progression_event(public_key, ProgressionEventType::BetaApplicantCreated, 1)
+            .await?;
+
+        badge_use_cases
+            .award_badge_if_eligible(public_key, ProgressionEventType::BetaApplicantCreated, 1)
+            .await?;
+
         Ok(applicant)
     }
 

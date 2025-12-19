@@ -1,5 +1,7 @@
 pub mod badge;
+pub mod badge_group;
+pub mod badge_requirement;
 pub mod beta_applicant;
 pub mod progression_event_type;
+pub mod user_progression;
 pub mod wallet_holdings;
-pub mod badge_group;
