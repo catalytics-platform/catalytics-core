@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[async_trait]
 pub trait BadgePersistence: Send + Sync + Debug {
-    async fn read_badges(&self, public_key: &str, group_id: i32) -> AppResult<Vec<Badge>>;
+    async fn read_badges(&self, public_key: &str) -> AppResult<Vec<Badge>>;
     async fn create_badge(&self, public_key: &str, badge_id: i32, value: i32) -> AppResult<()>;
     async fn create_catics_badges(&self, public_key: &str, catics_balance: f64) -> AppResult<()>;
     async fn create_staked_jup_badges(
@@ -41,8 +41,8 @@ impl BadgeUseCases {
         }
     }
 
-    pub async fn read_all(&self, public_key: &str, group_id: i32) -> AppResult<Vec<Badge>> {
-        let badges = self.persistence.read_badges(public_key, group_id).await?;
+    pub async fn read_all(&self, public_key: &str) -> AppResult<Vec<Badge>> {
+        let badges = self.persistence.read_badges(public_key).await?;
         Ok(badges)
     }
 

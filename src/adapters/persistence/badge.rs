@@ -36,6 +36,7 @@ impl PostgresPersistence {
             score: badge.score,
             is_unlocked: earned_map.get(&badge.id).is_some(),
             unlocked_at: earned_map.get(&badge.id).map(|badge| badge.created_at),
+            created_at: badge.created_at,
         });
 
         Ok(result.collect::<Vec<Badge>>())
@@ -44,9 +45,9 @@ impl PostgresPersistence {
 
 #[async_trait]
 impl BadgePersistence for PostgresPersistence {
-    async fn read_badges(&self, public_key: &str, group_id: i32) -> AppResult<Vec<Badge>> {
+    async fn read_badges(&self, public_key: &str) -> AppResult<Vec<Badge>> {
         let applicant_id = self.read_beta_applicant_by_public_key(public_key).await?.id;
-        let badges = sqlx::query_as!(BadgeDb, "SELECT b.* FROM badges b INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id WHERE bgc.badge_group_id = $1 ORDER BY bgc.sort_order", group_id)
+        let badges = sqlx::query_as!(BadgeDb, "SELECT b.* FROM badges b INNER JOIN badge_group_conjunctions bgc ON b.id = bgc.badge_id ORDER BY bgc.badge_group_id, bgc.sort_order")
             .fetch_all(&self.pool)
             .await
             .map_err(AppError::from)?;

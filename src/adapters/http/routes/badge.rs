@@ -13,6 +13,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
+use crate::entities::badge_group::BadgeGroup;
+use crate::use_cases::badge_group::BadgeGroupUseCases;
 
 pub fn private_router() -> Router<AppState> {
     Router::new()
@@ -49,28 +51,52 @@ impl From<Badge> for BadgeResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ReadBadgesQueryParams {
-    group_id: i32,
+struct BadgeGroupResponse {
+    id: i32,
+    title: String,
+    description: String,
+}
+
+impl From<BadgeGroup> for BadgeGroupResponse {
+    fn from(badge_group: BadgeGroup) -> Self {
+        Self {
+            id: badge_group.id,
+            title: badge_group.title,
+            description: badge_group.description,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetBadgesResponse {
+    badges: Vec<BadgeResponse>,
+    badge_groups: Vec<BadgeGroupResponse>,
 }
 
 #[instrument(skip(badge_use_cases))]
 async fn read_badges(
     auth: AuthenticatedUser,
-    Query(params): Query<ReadBadgesQueryParams>,
     State(badge_use_cases): State<Arc<BadgeUseCases>>,
+    State(badge_group_use_cases): State<Arc<BadgeGroupUseCases>>,
 ) -> AppResult<impl IntoResponse> {
     let badges = badge_use_cases
-        .read_all(&auth.public_key, params.group_id)
+        .read_all(&auth.public_key)
         .await?;
+    let badge_groups = badge_group_use_cases.read_all().await?;
+
+    let badges_response = badges.into_iter().map(BadgeResponse::from).collect::<Vec<_>>();
+    let badge_groups_response = badge_groups.into_iter().map(BadgeGroupResponse::from).collect::<Vec<_>>();
+
     Ok((
         StatusCode::OK,
         Json(
-            badges
-                .into_iter()
-                .map(BadgeResponse::from)
-                .collect::<Vec<_>>(),
+            GetBadgesResponse {
+                badges: badges_response,
+                badge_groups: badge_groups_response,
+            }
         ),
     ))
 }
