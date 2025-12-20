@@ -6,6 +6,7 @@ mod badge_group;
 mod beta_applicant;
 mod beta_applicant_badge;
 mod beta_applicant_progression;
+mod leaderboard;
 
 #[derive(Clone, Debug)]
 pub struct PostgresPersistence {

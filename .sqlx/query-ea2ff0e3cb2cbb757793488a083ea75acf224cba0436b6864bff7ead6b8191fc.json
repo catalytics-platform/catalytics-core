@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                ba.public_key,\n                ba.created_at,\n                SUM(b.score) as total_score\n            FROM beta_applicants ba\n            LEFT JOIN beta_applicant_badges bab ON ba.id = bab.beta_applicant_id  \n            LEFT JOIN badges b ON bab.badge_id = b.id\n            GROUP BY ba.id, ba.public_key, ba.created_at\n            ORDER BY COALESCE(SUM(b.score), 0) DESC, ba.created_at ASC\n            LIMIT $1 OFFSET $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "public_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_score",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "ea2ff0e3cb2cbb757793488a083ea75acf224cba0436b6864bff7ead6b8191fc"
+}
