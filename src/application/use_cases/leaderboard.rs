@@ -12,6 +12,11 @@ pub trait LeaderboardPersistence: Send + Sync + Debug {
         offset: u32,
     ) -> AppResult<Vec<LeaderboardEntry>>;
     async fn get_total_users_with_badges(&self) -> AppResult<u32>;
+    async fn get_user_rank(&self, public_key: &str) -> AppResult<u32>;
+    async fn get_user_leaderboard_entry(
+        &self,
+        public_key: &str,
+    ) -> AppResult<Option<LeaderboardEntry>>;
 }
 
 #[derive(Clone, Debug)]
@@ -38,5 +43,20 @@ impl LeaderboardUseCases {
 
         let dto_entries = entries.into_iter().map(LeaderboardEntryDto::from).collect();
         Ok((dto_entries, total))
+    }
+
+    pub async fn get_user_rank(&self, public_key: &str) -> AppResult<u32> {
+        self.persistence.get_user_rank(public_key).await
+    }
+
+    pub async fn get_user_leaderboard_entry(
+        &self,
+        public_key: &str,
+    ) -> AppResult<Option<LeaderboardEntryDto>> {
+        let entry = self
+            .persistence
+            .get_user_leaderboard_entry(public_key)
+            .await?;
+        Ok(entry.map(LeaderboardEntryDto::from))
     }
 }

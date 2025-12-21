@@ -6,6 +6,7 @@ use crate::entities::beta_applicant::BetaApplicant;
 use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
 use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
+use crate::use_cases::leaderboard::LeaderboardUseCases;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -37,6 +38,7 @@ struct BetaApplicantResponse {
     referral_code: String,
     referred_by: Option<String>,
     referral_count: i64,
+    current_rank: u32,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -45,8 +47,8 @@ struct BetaApplicantsCountResponse {
     count: i64,
 }
 
-impl From<BetaApplicant> for BetaApplicantResponse {
-    fn from(applicant: BetaApplicant) -> Self {
+impl BetaApplicantResponse {
+    fn from_applicant_with_rank(applicant: BetaApplicant, rank: u32) -> Self {
         Self {
             public_key: applicant.public_key,
             email: applicant.email,
@@ -54,6 +56,7 @@ impl From<BetaApplicant> for BetaApplicantResponse {
             referral_code: applicant.referral_code,
             referred_by: applicant.referred_by,
             referral_count: applicant.referral_count,
+            current_rank: rank,
         }
     }
 }
@@ -70,6 +73,7 @@ async fn create_beta_applicant(
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
     State(progression_use_cases): State<Arc<BetaApplicantProgressionUseCases>>,
     State(badge_use_cases): State<Arc<BadgeUseCases>>,
+    State(leaderboard_use_cases): State<Arc<LeaderboardUseCases>>,
     Json(payload): Json<CreateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
@@ -81,9 +85,15 @@ async fn create_beta_applicant(
         )
         .await?;
 
+    let rank = leaderboard_use_cases
+        .get_user_rank(&auth.public_key)
+        .await?;
+
     Ok((
         StatusCode::CREATED,
-        Json(BetaApplicantResponse::from(applicant)),
+        Json(BetaApplicantResponse::from_applicant_with_rank(
+            applicant, rank,
+        )),
     ))
 }
 
@@ -91,10 +101,19 @@ async fn create_beta_applicant(
 async fn read_beta_applicant(
     auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    State(leaderboard_use_cases): State<Arc<LeaderboardUseCases>>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases.read(&auth.public_key).await?;
+    let rank = leaderboard_use_cases
+        .get_user_rank(&auth.public_key)
+        .await?;
 
-    Ok((StatusCode::OK, Json(BetaApplicantResponse::from(applicant))))
+    Ok((
+        StatusCode::OK,
+        Json(BetaApplicantResponse::from_applicant_with_rank(
+            applicant, rank,
+        )),
+    ))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -107,13 +126,22 @@ struct UpdateBetaApplicantRequest {
 async fn update_beta_applicant(
     auth: AuthenticatedUser,
     State(beta_applicant_use_cases): State<Arc<BetaApplicantUseCases>>,
+    State(leaderboard_use_cases): State<Arc<LeaderboardUseCases>>,
     Json(payload): Json<UpdateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
         .update(&auth.public_key, &payload.email)
         .await?;
+    let rank = leaderboard_use_cases
+        .get_user_rank(&auth.public_key)
+        .await?;
 
-    Ok((StatusCode::OK, Json(BetaApplicantResponse::from(applicant))))
+    Ok((
+        StatusCode::OK,
+        Json(BetaApplicantResponse::from_applicant_with_rank(
+            applicant, rank,
+        )),
+    ))
 }
 
 #[instrument(skip(beta_applicant_use_cases))]
