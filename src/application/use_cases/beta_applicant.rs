@@ -61,6 +61,10 @@ impl BetaApplicantUseCases {
             .award_badge_if_eligible(public_key, ProgressionEventType::BetaApplicantCreated, 1)
             .await?;
 
+        progression_use_cases
+            .sync_all_progressions(public_key, badge_use_cases)
+            .await?;
+
         Ok(applicant)
     }
 
