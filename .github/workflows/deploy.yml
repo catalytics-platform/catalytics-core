@@ -26,6 +26,7 @@ jobs:
       app-image-tag: ${{ steps.build-app.outputs.image-tag }}
       app-image-uri: ${{ steps.build-app.outputs.image-uri }}
       migration-image-uri: ${{ steps.build-migration.outputs.image-uri }}
+      cronjob-image-uri: ${{ steps.build-cronjob.outputs.image-uri }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -76,6 +77,21 @@ jobs:
         
         echo "image-uri=$ECR_REGISTRY/$ECR_REPOSITORY:$MIGRATION_TAG" >> $GITHUB_OUTPUT
 
+    - name: Build and push cronjob image
+      id: build-cronjob
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        CRONJOB_TAG: catalytics-cronjobs-${{ github.sha }}
+      run: |
+        docker buildx build \
+          --platform linux/arm64 \
+          --push \
+          -f crons/Dockerfile.cronjobs \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CRONJOB_TAG \
+          ./crons/
+        
+        echo "image-uri=$ECR_REGISTRY/$ECR_REPOSITORY:$CRONJOB_TAG" >> $GITHUB_OUTPUT
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-22.04-arm
@@ -94,6 +110,7 @@ jobs:
       RUST_LOG: "catalytics_core=info,sqlx=warn"
       IMAGE: ${{ needs.build.outputs.app-image-uri }}
       MIGRATION_IMAGE: ${{ needs.build.outputs.migration-image-uri }}
+      CRONJOB_IMAGE: ${{ needs.build.outputs.cronjob-image-uri }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -126,13 +143,14 @@ jobs:
         export JUPITER_API_KEY="${{ secrets.STAGING_JUPITER_API_KEY }}"
         export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export JUP_TOKEN_ADDRESS="${{ secrets.JUP_TOKEN_ADDRESS }}"
-        export CATALYTICS_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_API_BASE_URL }}"
+        export CATALYTICS_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.STAGING_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
         envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
         envsubst < k8s/service.yaml > k8s/service-applied.yaml
         envsubst < k8s/ingress.yaml > k8s/ingress-applied.yaml
+        envsubst < k8s/cronjobs.yaml > k8s/cronjobs-applied.yaml
 
     - name: Deploy to Kubernetes
       run: |
@@ -173,6 +191,7 @@ jobs:
       RUST_LOG: "catalytics_core=info,sqlx=warn"
       IMAGE: ${{ needs.build.outputs.app-image-uri }}
       MIGRATION_IMAGE: ${{ needs.build.outputs.migration-image-uri }}
+      CRONJOB_IMAGE: ${{ needs.build.outputs.cronjob-image-uri }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -205,19 +224,21 @@ jobs:
         export JUPITER_API_KEY="${{ secrets.PROD_JUPITER_API_KEY }}"
         export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export JUP_TOKEN_ADDRESS="${{ secrets.JUP_TOKEN_ADDRESS }}"
-        export CATALYTICS_API_BASE_URL="${{ secrets.PROD_CATALYTICS_API_BASE_URL }}"
+        export CATALYTICS_API_BASE_URL="${{ secrets.PROD_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.PROD_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
         envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
         envsubst < k8s/service.yaml > k8s/service-applied.yaml
         envsubst < k8s/ingress.yaml > k8s/ingress-applied.yaml
+        envsubst < k8s/cronjobs.yaml > k8s/cronjobs-applied.yaml
 
     - name: Deploy to Kubernetes
       run: |
         kubectl apply -f k8s/deployment-applied.yaml
         kubectl apply -f k8s/service-applied.yaml
         kubectl apply -f k8s/ingress-applied.yaml
+        kubectl apply -f k8s/cronjobs-applied.yaml
 
     - name: Wait for rollout to complete
       run: |

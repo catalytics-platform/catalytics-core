@@ -1,0 +1,22 @@
+FROM python:3.12-slim
+
+# Install minimal dependencies
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash app
+
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the badge sync script
+COPY badge_sync.py .
+
+# Switch to non-root user
+USER app
+
+# Default command (overridden by CronJob)
+CMD ["python", "badge_sync.py"]

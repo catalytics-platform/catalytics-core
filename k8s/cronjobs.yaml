@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: badge-sync-cronjob
+  namespace: ${NAMESPACE}
+  labels:
+    app: catalytics-core
+    component: cronjob
+    environment: ${ENVIRONMENT}
+spec:
+  schedule: "0 1 * * *"  # Daily at 1 AM UTC
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: badge-sync
+            image: ${CRONJOB_IMAGE}
+            command: ["python", "/app/badge_sync.py"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: catalytics-core-secrets
+                  key: database-url
+            - name: CATALYTICS_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: catalytics-core-secrets
+                  key: catalytics-api-base-url
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+          restartPolicy: OnFailure
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
