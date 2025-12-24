@@ -27,7 +27,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: catalytics-core-secrets
-                  key: catalytics-api-base-url
+                  key: catalytics-core-api-base-url
             resources:
               requests:
                 memory: "64Mi"

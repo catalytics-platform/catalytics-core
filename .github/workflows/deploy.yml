@@ -143,7 +143,8 @@ jobs:
         export JUPITER_API_KEY="${{ secrets.STAGING_JUPITER_API_KEY }}"
         export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export JUP_TOKEN_ADDRESS="${{ secrets.JUP_TOKEN_ADDRESS }}"
-        export CATALYTICS_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_CORE_API_BASE_URL }}"
+        export CATALYTICS_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_API_BASE_URL }}"
+        export CATALYTICS_CORE_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.STAGING_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
@@ -224,7 +225,8 @@ jobs:
         export JUPITER_API_KEY="${{ secrets.PROD_JUPITER_API_KEY }}"
         export CATICS_TOKEN_ADDRESS="${{ secrets.CATICS_TOKEN_ADDRESS }}"
         export JUP_TOKEN_ADDRESS="${{ secrets.JUP_TOKEN_ADDRESS }}"
-        export CATALYTICS_API_BASE_URL="${{ secrets.PROD_CATALYTICS_CORE_API_BASE_URL }}"
+        export CATALYTICS_API_BASE_URL="${{ secrets.PROD_CATALYTICS_API_BASE_URL }}"
+        export CATALYTICS_CORE_API_BASE_URL="${{ secrets.PROD_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.PROD_CERTIFICATE_ARN }}"
         
         # Substitute variables in manifest files
