@@ -158,6 +158,7 @@ jobs:
         kubectl apply -f k8s/deployment-applied.yaml
         kubectl apply -f k8s/service-applied.yaml
         kubectl apply -f k8s/ingress-applied.yaml
+        kubectl apply -f k8s/cronjobs-applied.yaml
 
     - name: Wait for rollout to complete
       run: |
