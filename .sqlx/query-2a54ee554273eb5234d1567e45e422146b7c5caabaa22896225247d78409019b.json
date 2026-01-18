@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT public_key, total_score, rank, created_at\n             FROM leaderboard_entries \n             ORDER BY rank \n             LIMIT $1 OFFSET $2",
+  "query": "SELECT public_key, total_score, rank, previous_rank, created_at\n             FROM leaderboard_entries \n             ORDER BY rank \n             LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -20,6 +20,11 @@
       },
       {
         "ordinal": 3,
+        "name": "previous_rank",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -34,8 +39,9 @@
       false,
       false,
       false,
+      true,
       false
     ]
   },
-  "hash": "d717b14cf99b2cb38a8ccbe0de024e8bb2204c8353cc23c5f332e0239fd8064c"
+  "hash": "2a54ee554273eb5234d1567e45e422146b7c5caabaa22896225247d78409019b"
 }

@@ -33,6 +33,7 @@ struct LeaderboardEntryResponse {
     public_key: String,
     rank: u32,
     total_score: i32,
+    previous_rank: Option<u32>,
 }
 
 impl From<LeaderboardEntryDto> for LeaderboardEntryResponse {
@@ -41,6 +42,7 @@ impl From<LeaderboardEntryDto> for LeaderboardEntryResponse {
             public_key: mask_public_key(&entry.public_key),
             rank: entry.rank,
             total_score: entry.total_score,
+            previous_rank: entry.previous_rank,
         }
     }
 }

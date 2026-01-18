@@ -10,6 +10,7 @@ struct LeaderboardEntryDb {
     pub public_key: String,
     pub total_score: i32,
     pub rank: i32,
+    pub previous_rank: Option<i32>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -33,7 +34,7 @@ impl LeaderboardPersistence for PostgresPersistence {
     ) -> AppResult<Vec<LeaderboardEntry>> {
         let entries = sqlx::query_as!(
             LeaderboardEntryDb,
-            "SELECT public_key, total_score, rank, created_at
+            "SELECT public_key, total_score, rank, previous_rank, created_at
              FROM leaderboard_entries 
              ORDER BY rank 
              LIMIT $1 OFFSET $2",
@@ -50,6 +51,7 @@ impl LeaderboardPersistence for PostgresPersistence {
                 public_key: entry.public_key,
                 total_score: entry.total_score,
                 rank: entry.rank as u32,
+                previous_rank: entry.previous_rank.map(|r| r as u32),
                 created_at: entry.created_at,
             })
             .collect();
@@ -84,7 +86,7 @@ impl LeaderboardPersistence for PostgresPersistence {
     ) -> AppResult<Option<LeaderboardEntry>> {
         let result = sqlx::query_as!(
             LeaderboardEntryDb,
-            "SELECT public_key, total_score, rank, created_at
+            "SELECT public_key, total_score, rank, previous_rank, created_at
              FROM leaderboard_entries 
              WHERE public_key = $1",
             public_key
@@ -97,6 +99,7 @@ impl LeaderboardPersistence for PostgresPersistence {
             public_key: entry.public_key,
             total_score: entry.total_score,
             rank: entry.rank as u32,
+            previous_rank: entry.previous_rank.map(|r| r as u32),
             created_at: entry.created_at,
         }))
     }
@@ -133,6 +136,7 @@ impl LeaderboardPersistence for PostgresPersistence {
             public_key: entry.public_key.unwrap_or_default(),
             total_score: entry.total_score.unwrap_or(0),
             rank: entry.rank.unwrap_or(0) as u32,
+            previous_rank: None, // Real-time queries don't have previous rank data
             created_at: entry.created_at.unwrap_or_else(|| chrono::Utc::now()),
         }))
     }
