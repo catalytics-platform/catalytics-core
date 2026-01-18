@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT public_key, total_score, rank, created_at\n             FROM leaderboard_entries \n             ORDER BY rank \n             LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "public_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_score",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "rank",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d717b14cf99b2cb38a8ccbe0de024e8bb2204c8353cc23c5f332e0239fd8064c"
+}

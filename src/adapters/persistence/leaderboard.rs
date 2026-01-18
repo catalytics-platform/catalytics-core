@@ -13,6 +13,17 @@ struct LeaderboardEntryDb {
     pub created_at: DateTime<Utc>,
 }
 
+/// Database row for real-time leaderboard calculation using CTE and window functions.
+/// Fields are Optional because SQLx cannot guarantee non-nullability with complex queries,
+/// even though logically these should always have values for existing users.
+#[derive(sqlx::FromRow, Debug)]
+struct RealtimeLeaderboardEntryDb {
+    pub public_key: Option<String>,
+    pub total_score: Option<i32>,
+    pub rank: Option<i64>,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
 #[async_trait]
 impl LeaderboardPersistence for PostgresPersistence {
     async fn get_leaderboard_entries(
@@ -87,6 +98,42 @@ impl LeaderboardPersistence for PostgresPersistence {
             total_score: entry.total_score,
             rank: entry.rank as u32,
             created_at: entry.created_at,
+        }))
+    }
+
+    async fn get_user_realtime_entry(
+        &self,
+        public_key: &str,
+    ) -> AppResult<Option<LeaderboardEntry>> {
+        let result = sqlx::query_as!(
+            RealtimeLeaderboardEntryDb,
+            r#"
+            WITH ranked_users AS (
+                SELECT 
+                    ba.public_key,
+                    ba.created_at,
+                    COALESCE(SUM(b.score), 0)::INTEGER as total_score,
+                    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(b.score), 0) DESC, ba.created_at ASC) as rank
+                FROM beta_applicants ba
+                LEFT JOIN beta_applicant_badges bab ON ba.id = bab.beta_applicant_id  
+                LEFT JOIN badges b ON bab.badge_id = b.id
+                GROUP BY ba.id, ba.public_key, ba.created_at
+            )
+            SELECT public_key, created_at, total_score, rank 
+            FROM ranked_users 
+            WHERE public_key = $1
+            "#,
+            public_key
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(result.map(|entry| LeaderboardEntry {
+            public_key: entry.public_key.unwrap_or_default(),
+            total_score: entry.total_score.unwrap_or(0),
+            rank: entry.rank.unwrap_or(0) as u32,
+            created_at: entry.created_at.unwrap_or_else(|| chrono::Utc::now()),
         }))
     }
 }

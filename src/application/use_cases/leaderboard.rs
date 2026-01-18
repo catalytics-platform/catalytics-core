@@ -17,6 +17,10 @@ pub trait LeaderboardPersistence: Send + Sync + Debug {
         &self,
         public_key: &str,
     ) -> AppResult<Option<LeaderboardEntry>>;
+    async fn get_user_realtime_entry(
+        &self,
+        public_key: &str,
+    ) -> AppResult<Option<LeaderboardEntry>>;
 }
 
 #[derive(Clone, Debug)]
@@ -57,6 +61,14 @@ impl LeaderboardUseCases {
             .persistence
             .get_user_leaderboard_entry(public_key)
             .await?;
+        Ok(entry.map(LeaderboardEntryDto::from))
+    }
+
+    pub async fn get_user_realtime_leaderboard_entry(
+        &self,
+        public_key: &str,
+    ) -> AppResult<Option<LeaderboardEntryDto>> {
+        let entry = self.persistence.get_user_realtime_entry(public_key).await?;
         Ok(entry.map(LeaderboardEntryDto::from))
     }
 }

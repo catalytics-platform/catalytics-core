@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(DISTINCT ba.id) as count FROM beta_applicants ba",
+  "query": "SELECT COUNT(*) as count FROM leaderboard_entries",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       null
     ]
   },
-  "hash": "1f5b08997a89ad057b30519f73cb34cb753a3fb0e4e00468c119e44c8e210e14"
+  "hash": "d7c6e244b7028bbd8b7330468ef1ca958b79c901ce61efdd018aaa5081a0e30c"
 }

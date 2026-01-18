@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH ranked_users AS (\n                SELECT \n                    ba.public_key,\n                    ba.created_at,\n                    COALESCE(SUM(b.score), 0)::INTEGER as total_score,\n                    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(b.score), 0) DESC, ba.created_at ASC) as rank\n                FROM beta_applicants ba\n                LEFT JOIN beta_applicant_badges bab ON ba.id = bab.beta_applicant_id  \n                LEFT JOIN badges b ON bab.badge_id = b.id\n                GROUP BY ba.id, ba.public_key, ba.created_at\n            )\n            SELECT public_key, created_at, total_score, rank \n            FROM ranked_users \n            WHERE public_key = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "public_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_score",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "rank",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "2dcdc4ae12be61a29d435d841f4ddf8289bb42c65c0adc4ad93a5602fa3590a1"
+}

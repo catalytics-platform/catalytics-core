@@ -15,7 +15,8 @@ use tracing::instrument;
 
 pub fn private_router() -> Router<AppState> {
     Router::new()
-        .route("/", get(get_leaderboard))
+        .route("/", get(get_user_leaderboard))
+        .route("/list", get(get_leaderboard_list))
         .layer(middleware::from_fn(auth_middleware))
 }
 
@@ -96,8 +97,15 @@ struct UserContextResponse {
     is_on_current_page: bool,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UserLeaderboardResponse {
+    rank: u32,
+    total_score: i32,
+}
+
 #[instrument(skip(leaderboard_use_cases))]
-async fn get_leaderboard(
+async fn get_leaderboard_list(
     auth: AuthenticatedUser,
     Query(params): Query<LeaderboardQueryParams>,
     State(leaderboard_use_cases): State<Arc<LeaderboardUseCases>>,
@@ -146,6 +154,29 @@ async fn get_leaderboard(
                 total_score: user_score,
                 is_on_current_page: is_user_on_page,
             },
+        }),
+    ))
+}
+
+#[instrument(skip(leaderboard_use_cases))]
+async fn get_user_leaderboard(
+    auth: AuthenticatedUser,
+    State(leaderboard_use_cases): State<Arc<LeaderboardUseCases>>,
+) -> AppResult<impl IntoResponse> {
+    let user_entry = leaderboard_use_cases
+        .get_user_realtime_leaderboard_entry(&auth.public_key)
+        .await?;
+
+    let (user_rank, user_score) = match &user_entry {
+        Some(entry) => (entry.rank, entry.total_score),
+        None => (0, 0),
+    };
+
+    Ok((
+        StatusCode::OK,
+        Json(UserLeaderboardResponse {
+            rank: user_rank,
+            total_score: user_score,
         }),
     ))
 }
