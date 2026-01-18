@@ -82,6 +82,7 @@ async fn create_beta_applicant(
             payload.referral_code.as_deref(),
             progression_use_cases,
             badge_use_cases,
+            leaderboard_use_cases.clone(),
         )
         .await?;
 

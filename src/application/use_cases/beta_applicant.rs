@@ -3,6 +3,7 @@ use crate::entities::beta_applicant::BetaApplicant;
 use crate::entities::progression_event_type::ProgressionEventType;
 use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
+use crate::use_cases::leaderboard::LeaderboardUseCases;
 use async_trait::async_trait;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -47,10 +48,16 @@ impl BetaApplicantUseCases {
         referral_code: Option<&str>,
         progression_use_cases: Arc<BetaApplicantProgressionUseCases>,
         badge_use_cases: Arc<BadgeUseCases>,
+        leaderboard_use_cases: Arc<LeaderboardUseCases>,
     ) -> AppResult<BetaApplicant> {
         let applicant = self
             .persistence
             .create_beta_applicant(public_key, referral_code)
+            .await?;
+
+        // Add new user to leaderboard immediately after creation
+        leaderboard_use_cases
+            .add_new_user_to_leaderboard(applicant.id, public_key)
             .await?;
 
         progression_use_cases

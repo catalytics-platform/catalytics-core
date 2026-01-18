@@ -140,4 +140,23 @@ impl LeaderboardPersistence for PostgresPersistence {
             created_at: entry.created_at.unwrap_or_else(|| chrono::Utc::now()),
         }))
     }
+
+    async fn add_new_user_to_leaderboard(
+        &self,
+        beta_applicant_id: i32,
+        public_key: &str,
+    ) -> AppResult<()> {
+        sqlx::query!(
+            "INSERT INTO leaderboard_entries 
+             (beta_applicant_id, public_key, total_score, rank, previous_rank, created_at, updated_at)
+             VALUES ($1, $2, 0, (SELECT COALESCE(MAX(rank), 0) + 1 FROM leaderboard_entries), NULL, NOW(), NOW())",
+            beta_applicant_id,
+            public_key
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::from)?;
+
+        Ok(())
+    }
 }

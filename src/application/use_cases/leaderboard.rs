@@ -21,6 +21,11 @@ pub trait LeaderboardPersistence: Send + Sync + Debug {
         &self,
         public_key: &str,
     ) -> AppResult<Option<LeaderboardEntry>>;
+    async fn add_new_user_to_leaderboard(
+        &self,
+        beta_applicant_id: i32,
+        public_key: &str,
+    ) -> AppResult<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -70,5 +75,15 @@ impl LeaderboardUseCases {
     ) -> AppResult<Option<LeaderboardEntryDto>> {
         let entry = self.persistence.get_user_realtime_entry(public_key).await?;
         Ok(entry.map(LeaderboardEntryDto::from))
+    }
+
+    pub async fn add_new_user_to_leaderboard(
+        &self,
+        beta_applicant_id: i32,
+        public_key: &str,
+    ) -> AppResult<()> {
+        self.persistence
+            .add_new_user_to_leaderboard(beta_applicant_id, public_key)
+            .await
     }
 }
