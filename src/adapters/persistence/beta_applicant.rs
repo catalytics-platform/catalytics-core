@@ -147,7 +147,7 @@ impl BetaApplicantPersistence for PostgresPersistence {
     async fn update_beta_applicant(
         &self,
         public_key: &str,
-        email: &str,
+        email: Option<&str>,
     ) -> AppResult<BetaApplicant> {
         let beta_applicant = sqlx::query_as!(
             BetaApplicantDb,

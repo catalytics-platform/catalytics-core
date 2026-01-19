@@ -120,7 +120,7 @@ async fn read_beta_applicant(
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct UpdateBetaApplicantRequest {
-    email: String,
+    email: Option<String>,
 }
 
 #[instrument(skip(beta_applicant_use_cases))]
@@ -131,7 +131,7 @@ async fn update_beta_applicant(
     Json(payload): Json<UpdateBetaApplicantRequest>,
 ) -> AppResult<impl IntoResponse> {
     let applicant = beta_applicant_use_cases
-        .update(&auth.public_key, &payload.email)
+        .update(&auth.public_key, payload.email.as_deref())
         .await?;
     let rank = leaderboard_use_cases
         .get_user_rank(&auth.public_key)

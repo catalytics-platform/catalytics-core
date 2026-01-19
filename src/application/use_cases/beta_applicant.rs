@@ -25,7 +25,7 @@ pub trait BetaApplicantPersistence: Send + Sync + Debug {
     async fn update_beta_applicant(
         &self,
         public_key: &str,
-        email: &str,
+        email: Option<&str>,
     ) -> AppResult<BetaApplicant>;
     async fn count_beta_applicants(&self) -> AppResult<i64>;
     async fn count_referrals(&self, id: i32) -> AppResult<i64>;
@@ -83,7 +83,7 @@ impl BetaApplicantUseCases {
         Ok(applicant)
     }
 
-    pub async fn update(&self, public_key: &str, email: &str) -> AppResult<BetaApplicant> {
+    pub async fn update(&self, public_key: &str, email: Option<&str>) -> AppResult<BetaApplicant> {
         let applicant = self
             .persistence
             .update_beta_applicant(public_key, email)
