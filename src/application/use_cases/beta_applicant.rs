@@ -4,6 +4,7 @@ use crate::entities::progression_event_type::ProgressionEventType;
 use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
 use crate::use_cases::leaderboard::LeaderboardUseCases;
+use crate::use_cases::mailchimp::MailchimpClient;
 use async_trait::async_trait;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -35,11 +36,18 @@ pub trait BetaApplicantPersistence: Send + Sync + Debug {
 #[derive(Clone, Debug)]
 pub struct BetaApplicantUseCases {
     persistence: Arc<dyn BetaApplicantPersistence>,
+    mailchimp_client: Arc<dyn MailchimpClient>,
 }
 
 impl BetaApplicantUseCases {
-    pub fn new(persistence: Arc<dyn BetaApplicantPersistence>) -> Self {
-        Self { persistence }
+    pub fn new(
+        persistence: Arc<dyn BetaApplicantPersistence>,
+        mailchimp_client: Arc<dyn MailchimpClient>,
+    ) -> Self {
+        Self {
+            persistence,
+            mailchimp_client,
+        }
     }
 
     pub async fn create(
@@ -84,11 +92,52 @@ impl BetaApplicantUseCases {
     }
 
     pub async fn update(&self, public_key: &str, email: Option<&str>) -> AppResult<BetaApplicant> {
-        let applicant = self
+        // 1. Get current applicant state BEFORE any updates
+        let current_applicant = self
+            .persistence
+            .read_beta_applicant_by_public_key(public_key)
+            .await?;
+
+        // 2. Sync with Mailchimp FIRST - if this fails, nothing else happens
+        match (current_applicant.email.as_deref(), email) {
+            (None, Some(new_email)) => {
+                // Create new subscriber
+                self.mailchimp_client
+                    .upsert_member(
+                        new_email,
+                        current_applicant.id,
+                        public_key,
+                        &current_applicant.referral_code,
+                    )
+                    .await?;
+            }
+            (Some(old_email), Some(new_email)) if old_email != new_email => {
+                // First validate new email by trying to create it
+                self.mailchimp_client
+                    .upsert_member(
+                        new_email,
+                        current_applicant.id,
+                        public_key,
+                        &current_applicant.referral_code,
+                    )
+                    .await?;
+                // Only delete old email entry if new email creation succeeded
+                self.mailchimp_client.delete_member(old_email).await?;
+            }
+            (Some(old_email), None) => {
+                // Delete subscriber
+                self.mailchimp_client.delete_member(old_email).await?;
+            }
+            _ => {} // No sync needed (None->None, or same email)
+        }
+
+        // 3. Only update database AFTER Mailchimp succeeds
+        let updated_applicant = self
             .persistence
             .update_beta_applicant(public_key, email)
             .await?;
-        Ok(applicant)
+
+        Ok(updated_applicant)
     }
 
     pub async fn count(&self) -> AppResult<i64> {

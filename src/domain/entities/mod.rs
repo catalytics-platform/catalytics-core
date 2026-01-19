@@ -3,6 +3,7 @@ pub mod badge_group;
 pub mod badge_requirement;
 pub mod beta_applicant;
 pub mod leaderboard_entry;
+pub mod mailchimp;
 pub mod progression_event_type;
 pub mod user_progression;
 pub mod wallet_holdings;

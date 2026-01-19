@@ -24,6 +24,7 @@ impl IntoResponse for AppError {
                 "Internal server error".to_string(),
             ),
             AppError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found".to_string()),
+            AppError::Mailchimp(ref msg) => (StatusCode::BAD_REQUEST, msg.clone()),
         };
 
         let error_response = ErrorResponse {
