@@ -125,7 +125,7 @@ def refresh_leaderboard_entries() -> bool:
         SET 
             previous_rank = rank,
             rank = updates.new_rank,
-            total_score = total_score + updates.new_total_score,
+            total_score = updates.new_total_score,
             updated_at = NOW()
         FROM (
             WITH current_rankings AS (
