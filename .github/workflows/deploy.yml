@@ -146,6 +146,9 @@ jobs:
         export CATALYTICS_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_API_BASE_URL }}"
         export CATALYTICS_CORE_API_BASE_URL="${{ secrets.STAGING_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.STAGING_CERTIFICATE_ARN }}"
+        export MAILCHIMP_API_KEY="${{ secrets.STAGING_MAILCHIMP_API_KEY }}"
+        export MAILCHIMP_LIST_ID="${{ secrets.STAGING_MAILCHIMP_LIST_ID }}"
+        export MAILCHIMP_SERVER_PREFIX="${{ secrets.STAGING_MAILCHIMP_SERVER_PREFIX }}"
         
         # Substitute variables in manifest files
         envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
@@ -229,6 +232,9 @@ jobs:
         export CATALYTICS_API_BASE_URL="${{ secrets.PROD_CATALYTICS_API_BASE_URL }}"
         export CATALYTICS_CORE_API_BASE_URL="${{ secrets.PROD_CATALYTICS_CORE_API_BASE_URL }}"
         export CERTIFICATE_ARN="${{ secrets.PROD_CERTIFICATE_ARN }}"
+        export MAILCHIMP_API_KEY="${{ secrets.PROD_MAILCHIMP_API_KEY }}"
+        export MAILCHIMP_LIST_ID="${{ secrets.PROD_MAILCHIMP_LIST_ID }}"
+        export MAILCHIMP_SERVER_PREFIX="${{ secrets.PROD_MAILCHIMP_SERVER_PREFIX }}"
         
         # Substitute variables in manifest files
         envsubst < k8s/deployment.yaml > k8s/deployment-applied.yaml
