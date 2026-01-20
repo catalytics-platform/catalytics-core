@@ -78,21 +78,6 @@ spec:
             secretKeyRef:
               name: catalytics-core-secrets
               key: catalytics-api-base-url
-        - name: MAILCHIMP_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: mailchimp-api-key
-        - name: MAILCHIMP_LIST_ID
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: mailchimp-list-id
-        - name: MAILCHIMP_SERVER_PREFIX
-          valueFrom:
-            secretKeyRef:
-              name: catalytics-core-secrets
-              key: mailchimp-server-prefix
         - name: RUST_LOG
           value: "${RUST_LOG}"
         - name: PORT
@@ -144,9 +129,6 @@ stringData:
   jup-token-address: "${JUP_TOKEN_ADDRESS}"
   catalytics-api-base-url: "${CATALYTICS_API_BASE_URL}"
   catalytics-core-api-base-url: "${CATALYTICS_CORE_API_BASE_URL}"
-  mailchimp-api-key: "${MAILCHIMP_API_KEY}"
-  mailchimp-list-id: "${MAILCHIMP_LIST_ID}"
-  mailchimp-server-prefix: "${MAILCHIMP_SERVER_PREFIX}"
 
 ---
 apiVersion: autoscaling/v2

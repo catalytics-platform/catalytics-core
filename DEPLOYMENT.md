@@ -27,9 +27,6 @@ Ensure you have the required GitHub secrets configured:
 - `STAGING_JUPITER_API_KEY` - Jupiter API key for staging
 - `STAGING_CATALYTICS_API_BASE_URL` - Staging Catalytics API URL
 - `STAGING_CATALYTICS_CORE_API_BASE_URL` - Staging Core API URL
-- `STAGING_MAILCHIMP_API_KEY` - Mailchimp API key for staging
-- `STAGING_MAILCHIMP_LIST_ID` - Mailchimp list ID for staging
-- `STAGING_MAILCHIMP_SERVER_PREFIX` - Mailchimp server prefix for staging
 
 **Production Secrets:**
 - `PROD_DATABASE_URL` - PostgreSQL connection string  
@@ -37,9 +34,6 @@ Ensure you have the required GitHub secrets configured:
 - `PROD_JUPITER_API_KEY` - Jupiter API key for production
 - `PROD_CATALYTICS_API_BASE_URL` - Production Catalytics API URL
 - `PROD_CATALYTICS_CORE_API_BASE_URL` - Production Core API URL
-- `PROD_MAILCHIMP_API_KEY` - Mailchimp API key for production
-- `PROD_MAILCHIMP_LIST_ID` - Mailchimp list ID for production
-- `PROD_MAILCHIMP_SERVER_PREFIX` - Mailchimp server prefix for production
 
 **Shared Secrets:**
 - `AWS_ACCESS_KEY_ID_PROD` - AWS access key
@@ -110,27 +104,8 @@ envsubst < k8s/ingress.yaml | kubectl apply -f -
 | `CATICS_TOKEN_ADDRESS` | Catics token contract address | Yes |
 | `JUP_TOKEN_ADDRESS` | JUP token contract address | Yes |
 | `CATALYTICS_API_BASE_URL` | Catalytics API base URL | Yes |
-| `MAILCHIMP_API_KEY` | Mailchimp API authentication key | Yes |
-| `MAILCHIMP_LIST_ID` | Mailchimp audience/list identifier | Yes |
-| `MAILCHIMP_SERVER_PREFIX` | Mailchimp server region (us9/us17) | Yes |
 | `PORT` | Server port (default: 3000) | No |
 | `RUST_LOG` | Logging configuration | No |
-
-### Mailchimp Integration
-
-The application integrates with Mailchimp for email subscription management:
-
-**Field Mapping:**
-- `MMERGE1` → Beta Applicant ID (number)
-- `MMERGE2` → Truncated Public Key (text)  
-- `MMERGE3` → Referral Code (text)
-- `MMERGE4` → Referred By ID (optional)
-
-**Sync Behavior:**
-- Adding email creates subscribed member
-- Changing email validates new address first, then updates
-- Removing email deletes member from Mailchimp
-- All validation errors return raw Mailchimp messages
 
 ### Health Endpoints
 
@@ -210,17 +185,6 @@ kubectl describe ingress catalytics-core-ingress -n catalytics-core-staging
 
 # Verify certificate
 aws acm describe-certificate --certificate-arn YOUR_CERT_ARN --region eu-central-1
-```
-
-**4. Mailchimp Integration Issues**
-```bash
-# Check for Mailchimp-related errors in logs
-kubectl logs -l app=catalytics-core -n catalytics-core-staging | grep -i mailchimp
-
-# Common Mailchimp errors:
-# - "merge fields were invalid" → Check list configuration in Mailchimp
-# - "looks fake or invalid" → Email validation failed
-# - "cannot be removed" → Contact in restricted state (bounced/archived)
 ```
 
 ### Health Check Commands

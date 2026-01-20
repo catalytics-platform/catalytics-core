@@ -10,9 +10,6 @@ pub enum AppError {
 
     #[error("Not found: {0}")]
     NotFound(String),
-
-    #[error("Mailchimp error: {0}")]
-    Mailchimp(String),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
