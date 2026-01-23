@@ -4,6 +4,7 @@ use crate::use_cases::badge::BadgeUseCases;
 use crate::use_cases::badge_group::BadgeGroupUseCases;
 use crate::use_cases::beta_applicant::BetaApplicantUseCases;
 use crate::use_cases::beta_applicant_progression::BetaApplicantProgressionUseCases;
+use crate::use_cases::cat::CatUseCases;
 use crate::use_cases::leaderboard::LeaderboardUseCases;
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
@@ -20,6 +21,7 @@ pub async fn init_app_state() -> anyhow::Result<AppState> {
         postgres_arc.clone(),
         wallet_holding_arc.clone(),
     );
+    let cat_use_cases = CatUseCases::new(postgres_arc.clone());
     let leaderboard_use_cases = LeaderboardUseCases::new(postgres_arc.clone());
 
     Ok(AppState {
@@ -27,6 +29,7 @@ pub async fn init_app_state() -> anyhow::Result<AppState> {
         badge_use_cases: Arc::new(badge_use_case),
         badge_group_use_cases: Arc::new(badge_group_use_case),
         beta_applicant_progression_use_cases: Arc::new(beta_applicant_progression_use_cases),
+        cat_use_cases: Arc::new(cat_use_cases),
         leaderboard_use_cases: Arc::new(leaderboard_use_cases),
     })
 }

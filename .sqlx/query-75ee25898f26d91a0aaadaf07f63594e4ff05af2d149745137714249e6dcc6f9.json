@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, name, description, sprite_idle, sprite_mining, is_starter, created_at \n             FROM cats \n             ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "sprite_idle",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "sprite_mining",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_starter",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "75ee25898f26d91a0aaadaf07f63594e4ff05af2d149745137714249e6dcc6f9"
+}
