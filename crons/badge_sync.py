@@ -120,9 +120,8 @@ def refresh_leaderboard_entries() -> bool:
         cursor = conn.cursor()
         print("Calculating current rankings from badge data...")
         
-        # Single comprehensive operation - all steps in one transaction
-        leaderboard_refresh_query = """
-        -- Step 1: Calculate current badge totals for all users (once)
+        # Step 1: UPSERT scores with temporary ranks (this part works correctly)
+        upsert_scores_query = """
         WITH badge_totals AS (
             SELECT 
                 ba.id as beta_applicant_id,
@@ -133,62 +132,52 @@ def refresh_leaderboard_entries() -> bool:
             LEFT JOIN beta_applicant_badges bab ON ba.id = bab.beta_applicant_id  
             LEFT JOIN badges b ON bab.badge_id = b.id
             GROUP BY ba.id, ba.public_key, ba.created_at
-        ),
-        
-        -- Step 2: UPSERT leaderboard entries (handle both updates and inserts)
-        upserted AS (
-            INSERT INTO leaderboard_entries 
-            (beta_applicant_id, public_key, total_score, rank, previous_rank, created_at, updated_at)
-            SELECT 
-                bt.beta_applicant_id,
-                bt.public_key,
-                bt.current_badge_total,  -- For new users: initial score = badge total
-                -bt.beta_applicant_id,   -- Temporary unique negative rank to avoid conflicts
-                NULL as previous_rank,
-                NOW() as created_at,
-                NOW() as updated_at
-            FROM badge_totals bt
-            ON CONFLICT (beta_applicant_id) 
-            DO UPDATE SET 
-                previous_rank = leaderboard_entries.rank,  -- Save current rank to history
-                total_score = leaderboard_entries.total_score + EXCLUDED.total_score,  -- Accumulate daily points
-                rank = -EXCLUDED.beta_applicant_id,  -- Temporary rank to avoid conflicts
-                updated_at = NOW()
-            RETURNING beta_applicant_id, 
-                     CASE WHEN xmax = 0 THEN 'inserted' ELSE 'updated' END as operation
-        ),
-        
-        -- Step 3: Count operations for logging
-        operation_counts AS (
-            SELECT 
-                COUNT(*) FILTER (WHERE operation = 'updated') as updated_count,
-                COUNT(*) FILTER (WHERE operation = 'inserted') as inserted_count,
-                COUNT(*) as total_count
-            FROM upserted
         )
+        INSERT INTO leaderboard_entries 
+        (beta_applicant_id, public_key, total_score, rank, previous_rank, created_at, updated_at)
+        SELECT 
+            bt.beta_applicant_id,
+            bt.public_key,
+            bt.current_badge_total,  -- For new users: initial score = badge total
+            -bt.beta_applicant_id,   -- Temporary unique negative rank to avoid conflicts
+            NULL as previous_rank,
+            NOW() as created_at,
+            NOW() as updated_at
+        FROM badge_totals bt
+        ON CONFLICT (beta_applicant_id) 
+        DO UPDATE SET 
+            previous_rank = leaderboard_entries.rank,  -- Save current rank to history
+            total_score = leaderboard_entries.total_score + EXCLUDED.total_score,  -- Accumulate daily points
+            rank = -EXCLUDED.beta_applicant_id,  -- Temporary rank to avoid conflicts
+            updated_at = NOW();
+        """
         
-        -- Step 4: Assign final ranks based on accumulated total_score
+        cursor.execute(upsert_scores_query)
+        upserted_count = cursor.rowcount
+        print(f"Updated/inserted {upserted_count} leaderboard entries with scores")
+        
+        # Step 2: Assign final positive ranks based on accumulated total_score
+        assign_ranks_query = """
         UPDATE leaderboard_entries 
-        SET rank = final_rankings.new_rank
+        SET rank = final_ranks.new_rank
         FROM (
             SELECT 
                 le.beta_applicant_id,
                 ROW_NUMBER() OVER (ORDER BY le.total_score DESC, ba.created_at ASC)::INTEGER as new_rank
             FROM leaderboard_entries le
             JOIN beta_applicants ba ON le.beta_applicant_id = ba.id
-        ) final_rankings,
-        operation_counts oc
-        WHERE leaderboard_entries.beta_applicant_id = final_rankings.beta_applicant_id;
+        ) final_ranks
+        WHERE leaderboard_entries.beta_applicant_id = final_ranks.beta_applicant_id;
         """
         
-        cursor.execute(leaderboard_refresh_query)
-        affected_rows = cursor.rowcount
+        cursor.execute(assign_ranks_query)
+        ranked_count = cursor.rowcount
+        print(f"Assigned final ranks to {ranked_count} entries")
         
-        # Get operation counts for detailed logging
+        # Step 3: Get final statistics for logging
         cursor.execute("""
             SELECT 
                 COUNT(*) as total_entries,
-                COUNT(CASE WHEN rank > 0 THEN 1 END) as ranked_entries,
                 COALESCE(MAX(total_score), 0) as max_score,
                 COALESCE(MIN(total_score), 0) as min_score
             FROM leaderboard_entries
@@ -199,9 +188,8 @@ def refresh_leaderboard_entries() -> bool:
         conn.commit()
         
         print(f"✓ Leaderboard refresh completed successfully")
-        print(f"  - Processed {affected_rows} total entries")
         if stats:
-            print(f"  - Final leaderboard: {stats[0]} entries, max score: {stats[2]}, min score: {stats[3]}")
+            print(f"  - Final leaderboard: {stats[0]} entries, max score: {stats[1]}, min score: {stats[2]}")
         else:
             print(f"  - Final leaderboard: 0 entries")
         
