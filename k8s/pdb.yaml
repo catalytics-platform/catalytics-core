@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: catalytics-core-pdb
+  namespace: ${NAMESPACE}
+  labels:
+    app: catalytics-core
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: catalytics-core
