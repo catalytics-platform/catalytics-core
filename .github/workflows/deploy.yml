@@ -188,7 +188,7 @@ jobs:
       DOMAIN: api.app.catalytics.pro
       REPLICAS: 2
       MIN_REPLICAS: 2
-      MAX_REPLICAS: 10
+      MAX_REPLICAS: 4
       ALB_GROUP_NAME: production-shared-alb
       RUST_LOG: "catalytics_core=info,sqlx=warn"
       IMAGE: ${{ needs.build.outputs.app-image-uri }}
