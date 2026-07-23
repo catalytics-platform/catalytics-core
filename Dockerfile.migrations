@@ -13,8 +13,11 @@ RUN apk add --no-cache \
 # Set target for ARM64 static linking
 ENV RUSTFLAGS="-C target-feature=+crt-static"
 
-# Install SQLx CLI with static linking for ARM64 and TLS support
+# Install SQLx CLI with static linking for ARM64 and TLS support.
+# Pin to the sqlx crate version (see Cargo.toml) — unpinned grabs the latest CLI,
+# whose MSRV can exceed this base image's rustc (sqlx-cli 0.9.0 needs rust 1.94).
 RUN cargo install sqlx-cli \
+    --version 0.8.6 --locked \
     --no-default-features \
     --features postgres,rustls \
     --target aarch64-unknown-linux-musl
